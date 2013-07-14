@@ -30,7 +30,7 @@ class PdfPageCat;
 #define PDF_H
 
 struct Pdf {
-    static std::map<std::string, std::string> unrollDict(std::string&, std::string neededKey = "");
+    static std::map<std::string, std::string> unrollDict(std::string, std::string neededKey = "");
     static std::vector<std::string> unrollArray(std::string&);
     static int entry(const std::string&, int&, std::string&, std::string, std::string);
 

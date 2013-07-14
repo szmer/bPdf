@@ -88,7 +88,6 @@ PdfPageCat PdfIn::loadPages() {
 
 		/* else... (new node) */	
 		PdfInPages node;
-		std::cout << "New node: " << td << '\n';
 		node.attributes = unrollDict(td);
 
 		if(node.attributes.count("/Kids") < 1) {

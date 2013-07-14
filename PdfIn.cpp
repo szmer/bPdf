@@ -85,33 +85,6 @@ unsigned int PdfIn::resolveIndirect(const std::string& reference, int& pos, int&
 	return 0;
 }
 
-// extracts raw indirect object from current position
-/*std::string PdfIn::extractObject() {
-
-   std::string object = "";
-   std::streampos pos;
-   bool write = false;
-
-   while(true) {
-	pos = file.tellg();
-	std::string buff= "";
-	std::getline(file, buff);
-	buff += '\n';
-
-	if(write == false && buff.find("obj") != std::string::npos) {
-	    write = true;
-	    file.seekg(-(buff.length()), std::ios::cur);
-	    // read again from place after "obj" occurs
-	}
-	if(write == true) {
-	    if(std::size_t endobj = buff.find("endobj") != std::string::npos) {
-	    	object += buff.substr(0, endobj-1); // we must also add this fragment
-	    	return object;
-	    }
-	    object += buff; // "else"
-	}
-    }
-}*/
 void PdfIn::peekObj(unsigned int pos) {
 
     std::cout << "Here is object on " << pos << '\n';

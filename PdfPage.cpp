@@ -17,7 +17,7 @@ PdfStream PdfPage::nextContentStream() {
     unsigned int byteOffset = source->resolveIndirect(stack, contentsPnt, contentsPnt);
 
     source->file.seekg(byteOffset, std::ios::beg);
-    std::string td = source->extractObject(false); // leave alone the stream
+    std::string td = source->extractObject(true); // leave alone the stream
     std::cout << "extracted object:\n" << td << "\n";
     return PdfStream(Pdf::unrollDict(td), source->file.tellg(), source);
 }

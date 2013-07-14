@@ -1,6 +1,6 @@
 // unrollDict
 // if specific "neededKey" is provided, method will read dictionary only unless this key is found
-std::map<std::string, std::string> Pdf::unrollDict(std::string &str, std::string neededKey) {
+std::map<std::string, std::string> Pdf::unrollDict(std::string str, std::string neededKey) {
 
 	int i = 0;
 	std::map<std::string, std::string> map;

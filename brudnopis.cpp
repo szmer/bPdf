@@ -1,10 +1,3 @@
-/*
-
-OBJ A ENDOBJ - \s ???
-
-*/
-
-
 static size_t strfind(const char* needle_cstr, const char* haystack_cstr, const int pos = 0) {
 
     std::string needle = needle_cstr;
@@ -63,9 +56,8 @@ std::string PdfIn::extractObject
 
 
     // place the pointer
-    if(startPos >= 0)
-	file.seekg(startPos, std::ios::cur);
-
+    if(startPos != -1)
+	file.seekg(startPos, std::ios::beg);
 
     // FIND OBJECTS and RETURN if occured on zero position in string:
     while(file.good()) {
@@ -161,7 +153,7 @@ std::string PdfIn::extractObject
 	do {
 	    open = strfind(containingObjectsOpen[obj_num], buffer.c_str(), pos);
 	    close = strfind(containingObjectsClose[obj_num], buffer.c_str(), pos);
-	    stream = ignoreStreams ? std::string::npos : strfind("stream", buffer.c_str(), pos);
+	    stream = ignoreStreams ? strfind("stream", buffer.c_str(), pos) : std::string::npos;
 
 	    // IF opening char is before closing & "stream", INCREMENT embedding
 	    if( open != std::string::npos
@@ -175,9 +167,11 @@ std::string PdfIn::extractObject
 	    if( (stream < close || close < stream) && level == 0 ) {
 
 		if(stream != std::string::npos && stream < close)
-	            return (object + buffer.substr(0, stream));
+	            return (object + buffer.substr(0, stream).erase(stream)); 	// WITHOUT "s"(tream)
 		
-		return (object+buffer.substr(0, close));	// else
+		return (object   +   
+				buffer.substr(0, close).erase(close).append(containingObjectsClose[obj_num]));
+				// else return WITH whole ending delimiter
 
 	    }
 
@@ -186,7 +180,7 @@ std::string PdfIn::extractObject
 		pos = close, level--;
 	} while(open != std::string::npos || close != std::string::npos || stream != std::string::npos);
 
-	object += buffer;
+	object += buffer + "\n";
 	getline(file, buffer);
     } // while file.good() (loading from file)
     if(!(file.good()))
