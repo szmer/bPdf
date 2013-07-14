@@ -13,11 +13,12 @@ PdfPage::PdfPage(std::string ref, int number, std::map<std::string, std::string>
 
 PdfStream PdfPage::nextContentStream() {
     std::string stack = get("/Contents").substr(contentsPnt);
+    std::cout << "stack: " << stack << "\n";
     unsigned int byteOffset = source->resolveIndirect(stack, contentsPnt, contentsPnt);
 
     source->file.seekg(byteOffset, std::ios::beg);
-    std::string td = source->extractObject();
-    std::cout << td;
+    std::string td = source->extractObject(false); // leave alone the stream
+    std::cout << "extracted object:\n" << td << "\n";
     return PdfStream(Pdf::unrollDict(td), source->file.tellg(), source);
 }
 

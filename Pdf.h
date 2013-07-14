@@ -66,7 +66,7 @@ class PdfIn : public Pdf {
     // PDF objects methods
     unsigned int resolveIndirect(const std::string&);
     unsigned int resolveIndirect(const std::string&, int&, int&);
-    std::string extractObject(bool ignoreStreams = false);
+    std::string extractObject(bool ignoreStreams = false, size_t startPos = -1);
 
     void peekObj(unsigned int); // dbg
     PdfIn(const char*); // construct
@@ -119,11 +119,10 @@ class PdfOut : public Pdf {
 class PdfStream : public PdfNode {
   public:
     PdfStream(std::map<std::string, std::string>, size_t, PdfIn*);
-    bool end();
-    std::string getline();
+    std::string fetchWholeStream();
 
   private:
-    size_t currentPnt;
+    size_t streamPnt;
 } ;
 
 class PdfPage : public PdfNode {
@@ -161,6 +160,7 @@ class PdfPageCat {
 } ;
 
 #include "Pdf.cpp"
+#include "brudnopis.cpp"
 
 #include "PdfIn.cpp"
 #include "PdfInInit.cpp" // mapDocument() & document initialization methods

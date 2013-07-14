@@ -86,7 +86,7 @@ unsigned int PdfIn::resolveIndirect(const std::string& reference, int& pos, int&
 }
 
 // extracts raw indirect object from current position
-std::string PdfIn::extractObject(bool ignoreStreams = false) {
+/*std::string PdfIn::extractObject() {
 
    std::string object = "";
    std::streampos pos;
@@ -111,7 +111,7 @@ std::string PdfIn::extractObject(bool ignoreStreams = false) {
 	    object += buff; // "else"
 	}
     }
-}
+}*/
 void PdfIn::peekObj(unsigned int pos) {
 
     std::cout << "Here is object on " << pos << '\n';
