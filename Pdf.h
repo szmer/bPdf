@@ -29,13 +29,21 @@ class PdfPageCat;
 #ifndef PDF_H
 #define PDF_H
 
+typedef std::map<std::string, std::string> dictionary;
+
 struct Pdf {
-    static std::map<std::string, std::string> unrollDict(std::string, std::string neededKey = "");
+    static std::map<std::string, std::string> unrollDict(std::string);
     static std::vector<std::string> unrollArray(std::string&);
     static int entry(const std::string&, int&, std::string&, std::string, std::string);
 
     static std::string rollDict(std::map<std::string, std::string>&);
     static std::string rollArray(std::vector<std::string>&);
+
+    static std::string extractObject(std::istream &source, bool ignoreStreams = false,
+				size_t startPos = -1, bool trim = false);
+
+    static size_t strfind(const char*, const char*, const int pos = 0);
+    static std::string itoa(int);
 } ;
 
 class PdfNode : public Pdf {
@@ -66,7 +74,7 @@ class PdfIn : public Pdf {
     // PDF objects methods
     unsigned int resolveIndirect(const std::string&);
     unsigned int resolveIndirect(const std::string&, int&, int&);
-    std::string extractObject(bool ignoreStreams = false, size_t startPos = -1);
+    std::string extractObject(bool ignoreStreams = false, size_t startPos = -1, bool trim = false);
 
     void peekObj(unsigned int); // dbg
     PdfIn(const char*); // construct
@@ -98,19 +106,20 @@ class PdfOut : public Pdf {
     void insertRoot(PdfPageCat);
     void finish();
     PdfOut(const char*); //construct
-    std::vector<unsigned int> objCopied; // to indicate already copied objects, multiple PdfIns handling must be implemented later
-    int copy(PdfIn*, unsigned int);  // for objects from given position
+
+    std::string copyResources(PdfIn&, size_t);
+    std::string copyResources(PdfIn&, dictionary);
+    std::string copyResources(PdfIn&, std::string);
+    int writeIndirectObject(std::string);
 
    private:
-    void resolve(PdfNode&); // resolve a reference to indirect obj from given PdfIn
-    std::map<int,int> findRefs(std::string&, PdfIn*); // used by both resolve() 
-    int write(PdfNode&);
-
     std::ofstream file;
     unsigned int counter; // byte offset
     std::vector<PdfPage> pages;
     std::vector<PdfNode> pagesNodes;
-    std::vector<unsigned int> objects; // used to build xref section
+    std::map<size_t, int> copiedObjects; // objects copied from PdfIn (for now only one)
+					    // key is byteOffs in source, value is obj number
+    std::vector<size_t> positions; // used to build xref section
     PdfNode root;
 
     friend class PdfNode;
@@ -160,14 +169,15 @@ class PdfPageCat {
 } ;
 
 #include "Pdf.cpp"
+#include "Pdf-auxil.cpp"
 #include "brudnopis.cpp"
+#include "brudnout.cpp"
 
 #include "PdfIn.cpp"
 #include "PdfInInit.cpp" // mapDocument() & document initialization methods
 #include "PdfIn-LoadPages.cpp"
 
 #include "PdfOut.cpp" // constructors
-#include "PdfOut-Copy.cpp"
 #include "PdfOut-Finish.cpp"
 
 #include "PdfNode.cpp"

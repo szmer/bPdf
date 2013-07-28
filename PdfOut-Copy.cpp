@@ -3,8 +3,6 @@ int PdfOut::copy(PdfIn *doc, unsigned int byteOffset) {
    for(int i = 0; i < objCopied.size(); i++) 
 	if(byteOffset == objCopied[i]) return i+1;
 
-   std::cout << byteOffset << ' ' << objCopied.size() << '\n';
-
    std::string object;
    size_t strm;
    size_t endobj;

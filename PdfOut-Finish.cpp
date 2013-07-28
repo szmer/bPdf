@@ -1,138 +1,88 @@
 void PdfOut::finish() {
 
-    /*resolve references in pages and parent page nodes*/
-	/*parents' bussiness: (resolve indirects)*/
-    for(std::vector<PdfNode>::iterator node = pagesNodes.begin(); node != pagesNodes.end(); node++)
-	resolve(*node);
+    /*** resolve references in pages and parent page nodes ***/
+    for(int i=0; i<pages.size(); i++) 
+	pages[i].dictionary = Pdf::unrollDict(
+			copyResources(*(pages[i].source), pages[i].dictionary) );
 
-    std::cout << "Finish: Nodes resolved.\n";
-
-	/* pages */
-    for(std::vector<PdfPage>::iterator page = pages.begin(); page != pages.end(); page++)  
-	resolve(*page);
-
-    const unsigned int bound = (objects.size())-1; // here end required indirect objs and various other
-    { int i = 1;
-    for(std::vector<PdfPage>::iterator pg = pages.begin(); pg != pages.end(); pg++, i++) {
-	{ std::ostringstream num;
-	num << i + pagesNodes.size() + bound;
-	pagesNodes[(pg->inDictNum)].join("/Kids", num.str() + " 0 R "); }
-
-	{ int kidsCount = 1 + std::atoi(pagesNodes[(pg->inDictNum)].dictionary["/Count"].c_str());
-			// ^ pointless, optimize ^
-	std::ostringstream num;
-	num << kidsCount;
-	pagesNodes[(pg->inDictNum)].set("/Count", num.str()); 
-	}
-    }
+    for(int i=0; i<pagesNodes.size(); i++) {
+	pagesNodes[i].dictionary = Pdf::unrollDict(
+			copyResources(*(pagesNodes[i].source), pagesNodes[i].dictionary) );
+	pagesNodes[i].set("/Kids", "[ ");
     }
 
-    std::cout << "Finish: Pages resolved.\n";
+    /*** write pages and page nodes ***/
+    const int bound = positions.size(); // here end all indirect objects except page tree
+    const int pagesBound = bound + pages.size();
+    std::string pageTreeRootReference = Pdf::itoa(pagesBound + pagesNodes.size()) + " 0 R";
 
-	/* write page tree: */
-    for(std::vector<PdfNode>::iterator node = pagesNodes.begin(); node != pagesNodes.end();
-		node++) {
-	// page catalog:
-	if(node->get("/Count") == "0")
-	    continue;
+    /* pages */
+    for(int i=0; i<pages.size(); i++) {
 
-	std::ostringstream cat;
-	cat << bound + pagesNodes.size() + pages.size() + 1;
-	node->set("/Parent", cat.str() + " 0 R");
-	node->join("/Kids", "]");
+	// add reference to this page in the proper node (opening '[' was already placed above)
+	pagesNodes[ pages[i].inDictNum ].join("/Kids", Pdf::itoa(i + bound) + " 0 R ");
 
-	write(*node);
+	// add reference to the parent node
+	pages[i].set("/Parent", Pdf::itoa( pages[i].inDictNum+pagesBound ) + " 0 R"); 
+
+	writeIndirectObject(Pdf::rollDict(pages[i].dictionary));
     }
 
-    for(std::vector<PdfPage>::iterator pg = pages.begin(); pg != pages.end(); pg++) {
-	
-	// give parent entry:
-	std::ostringstream posStr;
-	posStr << pg->inDictNum + 1 + bound;
-	pg->set("/Parent", posStr.str() + " 0 R"); 
+    /* pages nodes */
+    std::string pageTreeRoot = "<< /Type /Pages\n/Kids [ ";
 
-	write(*pg);
+    for(int i=0; i<pagesNodes.size(); i++) {
+
+	pagesNodes[i].join("/Kids", "]");
+	pagesNodes[i].set("/Parent", pageTreeRootReference);
+
+	// count the kids:
+	std::string kidsStr = pagesNodes[i].get("/Kids");
+	int counter = 0;
+	for(int j=0; j < kidsStr.length(); j++)
+	    if(kidsStr[j] == 'R')
+		counter++;
+	pagesNodes[i].set("/Count", Pdf::itoa(counter));
+
+	int nodeObjNum = writeIndirectObject( Pdf::rollDict(pagesNodes[i].dictionary) );
+	pageTreeRoot += Pdf::itoa( nodeObjNum ) + " 0 R ";	
     }
 
-	/* write root of page tree:*/
-    {
-	objects.push_back(counter);
-	std::ostringstream intStr;
-	intStr << objects.size()-1;
-	std::string root = intStr.str() + " 0 obj\n<< /Type /Pages\n/Kids [ ";
-	for(int i = 1; i <= pagesNodes.size(); i++) {
-	    std::ostringstream nodNum;
-	    nodNum << (i + bound);
-	    root += nodNum.str() + " 0 R ";
-	}
-	intStr.clear();
-	intStr.str("");
-	intStr << pagesNodes.size();
-	root += "]\n/Count " + intStr.str() + " >>\nendobj\n";
-	write(root);
-    }
+    pageTreeRoot += "]\n/Count " + Pdf::itoa( pagesNodes.size() ) + " >>";
+    writeIndirectObject(pageTreeRoot);
 
-       /* write document catalog*/
-    int docCat = objects.size();
+    /* document root catalog */
     if(root.dictionary.size() == 0) {
-	objects.push_back(counter);
-	std::ostringstream intStr;
-	intStr << objects.size()-1;
-	std::string cat = intStr.str();
-	intStr.clear();
-	intStr.str("");
-	intStr << objects.size()-2;// page tree root
-	cat += " 0 obj\n<< /Type /Catalog\n/Pages "+intStr.str()+" 0 R >>\nendobj\n";
-	write(cat);
+        std::string documentCatalog = "<< /Type /Catalog\n/Pages " + pageTreeRootReference + " >>";
+        writeIndirectObject(documentCatalog);
     }
     else {
-	root.set("/Pages", "");
-
- 	if(root.source != 0) resolve(root);
-
-	std::ostringstream intStr;
-	intStr << objects.size()-1;// page tree root
-	root.set("/Pages", intStr.str() + " 0 R");
-
-	objects.push_back(counter);
-	intStr.clear();
-	intStr.str("");
-	intStr << objects.size()-1;
-	std::string cat = intStr.str() + " 0 obj\n" + Pdf::rollDict(root.dictionary) + "\nendobj\n";
-	write(cat);
+	std::string rootDictionary;
+	if(root.source != 0)
+	     rootDictionary = copyResources(*(root.source), Pdf::rollDict(root.dictionary));
+	else
+	     rootDictionary = Pdf::rollDict(root.dictionary);
+	writeIndirectObject(rootDictionary);
     }
 
-	/* write xref table: */
+    /*** xref table: ***/
+    std::string documentSize = Pdf::itoa( positions.size() );
     unsigned int xrefPos = counter;
-    {
-	std::ostringstream count;
-	count << objects.size();
-	write("xref\n0 " + count.str() + "\n0000000000 65635 f\n");
-	for(int i = 1; i < objects.size(); i++) { // insert entries with byte offsets
-	    std::ostringstream offs;
-	    offs << objects[i];
 
-	    for(int j = 0; j<(10-offs.str().length()); j++) write("0");
-	
-	    write(offs.str() + " 00000 n\n");
-	}
-	
+    std::string xrefTable = "xref\n0 " + documentSize + " \n0000000000 65635 f\n";
+    for(int i=1; i<positions.size(); i++) {
+	std::string byteOffset = Pdf::itoa(positions[i]);
+	for(int j=byteOffset.size(); j<10; j++) // byte offset must contain 10 bytes
+	     xrefTable += "0";
+	xrefTable += byteOffset;
+	xrefTable +=" 00000 n \n";
     }
-	/* write file trailer*/
-    { 
-	std::ostringstream strInt;
-	strInt << objects.size();
-	write("trailer\n<< /Size " + strInt.str() + "\n/Root ");
-	strInt.clear();
-	strInt.str("");
-	strInt << docCat; // document catalog
-	write(strInt.str() + " 0 R >>\n");
-    }
+    write(xrefTable);
 
-    // end document:
-    {
-    	std::ostringstream strInt;
-    	strInt << xrefPos;
-	write("startxref\n" + strInt.str() + "\n%%EOF");
-    }
+    /*** file trailer ***/
+    write("trailer\n<< /Size " + documentSize + "\n/Root "
+		+ Pdf::itoa( positions.size()-1 ) + " 0 R >>\n");
+
+    /*** end document ***/
+    write("startxref\n" + Pdf::itoa(xrefPos) + "\n%%EOF");
 }

@@ -10,17 +10,12 @@ PdfPageCat PdfIn::loadPages() {
 		return catalog;
 	}
 
-	file.seekg(static_cast<long int>(resolveIndirect(trailer["/Root"])), std::ios::beg);
-	std::string source = extractObject();
+	std::string source = extractObject(true,resolveIndirect(trailer["/Root"]));
 	catalog.root = unrollDict(source);
-
-#ifdef PDFIN_DEBUG
-	std::cout << "Document root catalog loaded." << std::endl;
-#endif
 
 	/* passing through page tree */
 	if(catalog.root.count("/Pages") < 1) {
-		std::cout << "Loading pages: there are no page tree.\n";
+		std::cout << "There are no page tree.\n";
 		return catalog;
 	}
 
@@ -35,15 +30,11 @@ PdfPageCat PdfIn::loadPages() {
 
 	// initialize queue:
 	if(root.attributes.count("/Kids") < 1) {
-		std::cout << "Loading pages: there are no kids of page tree root.\n";
+		std::cout << "Page tree root has no kids.\n";
 		return catalog;
 	}
 	root.kids = unrollArray(root.attributes["/Kids"]);
 	tree.push_back(root);
-
-	#ifdef PDFIN_DEBUG
-	std::cout << "Pages tree initialized. Starting loading pages..."; 
-	#endif
 
 	do {
 		if(tree.back().kids.size() > 0) { // move to the first child (which means "last" - vector is reversed) and remove it
@@ -56,13 +47,13 @@ PdfPageCat PdfIn::loadPages() {
 		}
 
 		std::string td = extractObject();
-		std::map<std::string, std::string> identify = unrollDict(td, "/Type"); // we want only that by now
+		std::map<std::string, std::string> identify = unrollDict(td);
 
 		if(identify.count("/Type") < 1) {
 			break;
 		}
 
-		/* if it is a leaf (that is, page)... */
+		/* if it is a leaf (page)... */
 		if(identify["/Type"] == "/Page") {
 			PdfPageCat::Entry page;
 			page.reference = tree.back().kids.back();
@@ -102,9 +93,6 @@ PdfPageCat PdfIn::loadPages() {
 
 	} while(tree.size() != 0);
 
-    #ifdef PDFIN_DEBUG
-	std::cout << "done, pages count: " << catalog.pages.size() << std::endl;
-    #endif
 	catalog.doc = this;
 	return catalog;
 }

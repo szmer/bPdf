@@ -8,7 +8,7 @@ PdfPage::PdfPage(std::string ref, int number, std::map<std::string, std::string>
     source->file.seekg(static_cast<long int>(source->resolveIndirect(reference)) , std::ios::beg);
     std::string td = source->extractObject();
     dictionary = Pdf::unrollDict(td);
-    set("/Parent", "");
+    set("/Parent", "0");
 }
 
 PdfStream PdfPage::nextContentStream() {
@@ -18,7 +18,6 @@ PdfStream PdfPage::nextContentStream() {
 
     source->file.seekg(byteOffset, std::ios::beg);
     std::string td = source->extractObject(true); // leave alone the stream
-    std::cout << "extracted object:\n" << td << "\n";
     return PdfStream(Pdf::unrollDict(td), source->file.tellg(), source);
 }
 

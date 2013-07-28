@@ -1,30 +1,9 @@
-static size_t strfind(const char* needle_cstr, const char* haystack_cstr, const int pos = 0) {
-
-    std::string needle = needle_cstr;
-    std::string haystack = haystack_cstr;
-
-    if(needle.length() > haystack.length() || pos >= haystack.length())
-	return std::string::npos;
-
-    for(int i=0, j=0, k=-1; i<haystack.length(); i++) {
-	if(haystack[i] == needle[j]) {
-	    if(j==0)	k=i;
-	    j++;
-	}
-	else if(j!=0)
-	    k=-1, j=0;
-
-	if(j == needle.length()) 
-	    return k;
-    }
-
-    return std::string::npos;
+std::string PdfIn::extractObject
+(bool ignoreStreams, size_t startPos, bool trim) {
+     return Pdf::extractObject(file, ignoreStreams, startPos, trim);
 }
 
-std::string PdfIn::extractObject
-(bool ignoreStreams, size_t startPos) {
-
-
+std::string Pdf::extractObject(std::istream &source, bool ignoreStreams, size_t startPos, bool trim) {
     // CONTAINING OBJECTS: strings, arrays, dictionaries
     // each ends with specifing delimiting character
     const int CO_count = 6;
@@ -32,7 +11,7 @@ std::string PdfIn::extractObject
 		"(\0", "<<\0", "[\0", "<\0", "obj\0", "stream\0"
 		};
     const char* containingObjectsClose[CO_count] = {
-		")\0", ">>\0", "[\0", ">\0", "endobj\0", "endstream\0"
+		")\0", ">>\0", "]\0", ">\0", "endobj\0", "endstream\0"
     		};
     int CO_positions[CO_count] = { -1, -1, -1, -1, -1, -1 };
     // /\ /\ /\ if no object sign will be found on zero position, this array will tell which comes first
@@ -49,6 +28,8 @@ std::string PdfIn::extractObject
 				    -1, -1, -1, -1, -1,
 				    -1, -1, -1, -1, -1,};
 
+    // starting position in line will be saved to place the pointer in the stream in the end of the object
+    size_t lineStart;
 
     // reading variables:
     std::string object;
@@ -57,24 +38,26 @@ std::string PdfIn::extractObject
 
     // place the pointer
     if(startPos != -1)
-	file.seekg(startPos, std::ios::beg);
+	source.seekg(startPos, std::ios::beg);
 
     // FIND OBJECTS and RETURN if occured on zero position in string:
-    while(file.good()) {
-	std::getline(file, buffer);
+
+    while(source.good()) {
+	lineStart = source.tellg();
+	std::getline(source, buffer);
 	bool sthFound = false;
 	size_t pos;
-	
+
 	// EXAMINE COs
 	for(int i=0; i<CO_count; i++) {
-	   if( ( pos = strfind(containingObjectsOpen[i], buffer.c_str()) ) != std::string::npos) {
+	   if( ( pos = Pdf::strfind(containingObjectsOpen[i], buffer.c_str()) ) != std::string::npos) {
 
 		sthFound = true;
 
 		// for "obj" INCLUDE numbers to the beginning of "# # obj" statement:
 		if(i == 4) {			// index for "obj" 
 		   obj_self_pos = pos;
-		   for(int spaces=0 ; (spaces!=2 && pos!=0) ; pos--)
+		   for(int spaces=0 ; (spaces!=3 && pos>0) ; pos--)
 			if(buffer[pos] == ' ')
 			    spaces++;
 		}
@@ -89,16 +72,60 @@ std::string PdfIn::extractObject
 	   } // if CO found
 	} // for COs
 
-	// BREAK loop if sth found
-	if(sthFound)
+	// BREAK loop if sth found on zero position
+	if(obj_num != -1)
 	    break;
 
 	// EXAMINE nCOs
 	for(int i=0; i<nCO_count; i++) {
-	   if( ( pos = strfind(nonContainingObjects[i], buffer.c_str()) ) != std::string::npos) {
+	   if( ( pos = Pdf::strfind(nonContainingObjects[i], buffer.c_str()) ) != std::string::npos) {
 
-		if(pos == 0) // return to the whitespace
-		    return buffer.substr(0, buffer.find_first_of(" \t\n\v\f\r"));
+		if(pos == 0) {
+		// 27.07.13 20:52
+		    size_t end; // end of the object
+		    switch(i) {
+			case 0: end = pos + 4; 		// bool. true
+			break;
+			case 1: end = pos + 5;		// bool. false
+			break;
+
+			case 2:				// names
+			    end = pos+1;
+			    while(		// see PDF spec, p. 17, but added opening signs
+						// because writers careleslly break the standards
+				(int)buffer[end] > 32 && (int)buffer[end] < 127 && buffer[end] != '('
+				&& buffer[end] != '/' && buffer[end] != '[' && buffer[end] != '<'
+			    ) 
+				end++;
+			    break;
+
+			default:			// numbers
+			    end = pos+1;
+			    while((int)buffer[end] > 47 && (int)buffer[end] < 58)		// digits
+			      end++;
+
+			    // see if it's not an indirect ref:
+			    int spcs = 0, digits = 0;
+			    for(int z=end; z<buffer.length(); z++) {
+				if(buffer[z] == ' ') {
+				    spcs++;
+				    continue;
+				}
+				if(spcs == 1 && (int)buffer[z] > 47 && (int)buffer[z] < 58)
+				    digits++;
+				if(spcs == 2 && buffer[z] == 'R') {
+				    end = z+1;
+				    break;
+				}
+				if(spcs > 2)
+				    break;
+			    }
+
+			    break;
+		    } // switch
+		    source.seekg(lineStart+end, std::ios::beg); // move cursor to the end of obj
+		    return buffer.substr(pos, end-pos);
+		}
 		
 		nCO_positions[i] = pos;
 		sthFound = true;
@@ -110,10 +137,9 @@ std::string PdfIn::extractObject
 	if(sthFound)
 	    break;
 
-    } // while file.good() (looking for symbols)
-    if(!(file.good()))
-	throw "Problem with file when extracting PDF object.";
-
+    } // while source.good() (looking for symbols)
+    if(!(source.good()))
+	return std::string("");
 
     // IF nothing found on zero pos :
     // CHECK what came first and RETURN if nCO
@@ -128,32 +154,94 @@ std::string PdfIn::extractObject
 	   break;
 
 	for(int j=0; j<nCO_count; j++)
-	    if(nCO_positions[j] == i)
-		return
-		 buffer.substr( nCO_positions[j], buffer.find_first_of(" \t\n\v\f\r", nCO_positions[j]) );
-       } // for possible positions - find the first object
+	    if(nCO_positions[j] == i) {
+		// 27.07.13 20:52
+		    size_t end; // end of the object
 
+		    switch(j) {
+			case 0: end = i + 4; 		// bool. true
+			break;
+			case 1: end = i + 5;		// bool. false
+			break;
+
+			case 2:				// names
+			    end = i+1;
+			    while(		// see PDF spec, p. 17, but added opening signs
+						// because writers careleslly break the standards
+				(int)buffer[end] > 32 && (int)buffer[end] < 127 && buffer[end] != '('
+				&& buffer[end] != '/' && buffer[end] != '[' && buffer[end] != '<'
+			    ) 
+				end++;
+			    break;
+
+			default:			// numbers
+			    end = i+1;
+			    while((int)buffer[end] > 47 && (int)buffer[end] < 58)		// digits
+			      end++;
+
+			    // see if it's not an indirect ref:
+			    int spcs = 0, digits = 0;
+			    for(int z=end; z<buffer.length(); z++) {
+				if(buffer[z] == ' ') {
+				    spcs++;
+				    continue;
+				}
+				if(spcs == 1 && (int)buffer[z] > 47 && (int)buffer[z] < 58)
+				    digits++;
+				if(spcs == 2 && buffer[z] == 'R') {
+				    end = z+1;
+				    break;
+				}
+				if(spcs > 2)
+				    break;
+			    }
+
+			    // see if it's not an internal ref:
+			    if(i > 4 && buffer.substr(i-4, 4) == "@@@@")
+				i -= 4;
+
+			    break;
+		    }
+
+		    source.seekg(lineStart+end, std::ios::beg); // move cursor to the end of obj
+		    return buffer.substr(i, end-i);
+	    }
+       } // for possible positions - find the first object
 
     // IF CO found, LOAD it and RETURN
 
     if(obj_self_pos != -1) {		// "obj" - indirect object
-	// extract the "# # o"(..bj) to avoid re-finding it:
-    	object = buffer.substr(CO_positions[obj_num], obj_self_pos);
-	buffer = buffer.substr(obj_self_pos+1);
+
+	if(!trim) {
+	    // extract the "# # o"(..bj) to avoid re-finding it:
+    	    object = buffer.substr(CO_positions[obj_num], obj_self_pos);
+	    buffer = buffer.substr(obj_self_pos+1);
+	}
+
+	else   // skip whole opening marker
+	    buffer = buffer.substr(obj_self_pos+3);  
     }
     else {
-	// extract the first char to avoid re-finding it:
-        object = buffer[CO_positions[obj_num]];
-        buffer = buffer.substr(CO_positions[obj_num]+1);
+
+	if(!trim) {
+	    // extract the first char to avoid re-finding it:
+            object = buffer[CO_positions[obj_num]];
+            buffer = buffer.substr(CO_positions[obj_num]+1);
+	}
+
+	else    // skip whole opening marker
+	    buffer = buffer.substr( buffer.substr(CO_positions[obj_num]).find_first_of(" \t\n\v\f\r") );
+
     }
     int level = 0; 			// indicate embedded objects
-    while(file.good()) { 		// load line by line
+
+    while(source.good()) { 		// load line by line
 
 	size_t open, close, stream, pos = 0;
 	do {
-	    open = strfind(containingObjectsOpen[obj_num], buffer.c_str(), pos);
-	    close = strfind(containingObjectsClose[obj_num], buffer.c_str(), pos);
-	    stream = ignoreStreams ? strfind("stream", buffer.c_str(), pos) : std::string::npos;
+	    open = Pdf::strfind(containingObjectsOpen[obj_num], buffer.c_str(), pos);
+	    close = Pdf::strfind(containingObjectsClose[obj_num], buffer.c_str(), pos);
+	    stream = ignoreStreams ? Pdf::strfind("stream", buffer.c_str(), pos) : std::string::npos;
 
 	    // IF opening char is before closing & "stream", INCREMENT embedding
 	    if( open != std::string::npos
@@ -166,13 +254,19 @@ std::string PdfIn::extractObject
 	    // IF ending closing char || "stream" found, RETURN
 	    if( (stream < close || close < stream) && level == 0 ) {
 
-		if(stream != std::string::npos && stream < close)
+
+		if(stream != std::string::npos && stream < close) {
+		    source.seekg(-(buffer.length()-stream+1), std::ios::beg); // place the pointer on start of stream
 	            return (object + buffer.substr(0, stream).erase(stream)); 	// WITHOUT "s"(tream)
-		
+		}
+
+		source.seekg(-(buffer.length()-close), std::ios::cur); // place the pointer after the end of obj
+
+		if(trim)		
+		return object + buffer.substr(0, close).erase(close);
+		// else return WITH whole ending delimiter
 		return (object   +   
 				buffer.substr(0, close).erase(close).append(containingObjectsClose[obj_num]));
-				// else return WITH whole ending delimiter
-
 	    }
 
 	    // ELSE IF closing char is present, DECREMENT embedding
@@ -181,8 +275,8 @@ std::string PdfIn::extractObject
 	} while(open != std::string::npos || close != std::string::npos || stream != std::string::npos);
 
 	object += buffer + "\n";
-	getline(file, buffer);
-    } // while file.good() (loading from file)
-    if(!(file.good()))
-	throw "Problem with file when extracting PDF object.";
+	getline(source, buffer);
+    } // while source.good() (loading from source)
+    if(!(source.good()))
+	return std::string("");
 }

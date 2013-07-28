@@ -1,45 +1,22 @@
 // unrollDict
 // if specific "neededKey" is provided, method will read dictionary only unless this key is found
-std::map<std::string, std::string> Pdf::unrollDict(std::string str, std::string neededKey) {
+std::map<std::string, std::string> Pdf::unrollDict(std::string str) {
 
-	int i = 0;
-	std::map<std::string, std::string> map;
+    dictionary dict;
+    std::stringstream strStream(str);
 
-	if(str == "")
-		return map;
+    // get rid of opening "<<":
+    while(strStream.get() != '<');
+    strStream.ignore();
 
-	while(i != -1) {
+    while(strStream.good()) {
+	std::string key = Pdf::extractObject(strStream);	
+	std::string value = Pdf::extractObject(strStream);
+	if(key != "" && value != "")
+	     dict.insert( std::pair<std::string, std::string>(key, value) );
+    }
 
-		std::string key = "";
-		std::string value = "";
-
-		i = entry(str, i, key, "<<", ">>"); // key
-		if(i == -2) {
-		//	PDFIN_NOTICE("Cannot process a dictionary (key). \n");
-			exit(1); // return 0;
-		}
-		if(i == -1)
-			break;
-	//	std::cout << key << " odpowiada ";
-
-		i = entry(str, i, value, "<<", ">>"); // value
-		if(i == -2) {
-//			PDFIN_NOTICE("Cannot process a dictionary (value). \n");
-			exit(1); // return 0;
-		}
-	//	std::cout << value << "\n\n\n\n\n\n\n";
-
-		if(key != "" && value != "") {
-			map.insert( std::pair<std::string, std::string>(key, value) );
-		}
-		else
-			break;
-
-		if(key == neededKey && neededKey != "")
-			break;
-	}
-
-	return map;
+    return dict;
 }
 
 // unrollArray()

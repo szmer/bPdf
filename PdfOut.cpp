@@ -7,8 +7,8 @@ void PdfOut::add(PdfPage page) {
 	   PdfNode newNode;
 	   newNode.source = page.source;
 	   newNode.dictionary = page.inheritedDict;
-	   newNode.set("/Kids", "[ ");
-	   newNode.set("/Parent", "");
+	   newNode.set("/Kids", "[ ]");
+	   newNode.set("/Parent", "0");
 	   newNode.set("/Count", "0");
 	   pagesNodes.push_back(newNode);
 
@@ -22,7 +22,6 @@ void PdfOut::add(PdfPage page) {
     }
 	
     pages.push_back(page);
-    std::cout << "Page added.\n";
     return;
 }
 void PdfOut::write(std::string str) {
@@ -30,9 +29,8 @@ void PdfOut::write(std::string str) {
     counter += str.length();
     return;
 }
-// resolve references in dict
+/*// resolve references in dict
 void PdfOut::resolve(PdfNode &node) {
-   /* find and copy all necessary indirects:*/
    for(std::map<std::string, std::string>::iterator i = node.dictionary.begin(); 
            i != node.dictionary.end(); i++)
    {
@@ -81,7 +79,7 @@ int PdfOut::write(PdfNode &node) {
     }    write(writeDict);
     return ref;
 }
-
+*/
 void PdfOut::insertRoot(std::map<std::string, std::string> givenRoot) {
     root.dictionary = givenRoot;
     root.source = 0;
@@ -95,15 +93,14 @@ void PdfOut::insertRoot(PdfPageCat givenObj) {
 PdfOut::PdfOut(const char* filename) {
     file.open(filename, std::fstream::out | std::ofstream::trunc);
 
-    if(file.good() == false) {
-//	PDFIN_NOTICE("File opening failed. \n");
-    }
-    objects.push_back(0); // this will be "free" object in xref table
+    if(file.good() == false)
+	std::cout << "Opening output Pdf file " << filename << " failed.\n";
+
+    positions.push_back(0); // this will be "free" object in xref table
     counter = 0;
 
     // write PDF header to file:
     std::string header = "%PDF-1.7\n%âãÏÓ\n";
     write(header);
-    std::cout << "PdfOut: " << filename << " ready.\n";
     return;
 }

@@ -2,28 +2,13 @@
 void PdfIn::mapDocument() {
 
 	checkCR();
-#ifdef PDFIN_DEBUG
-	std::cout << "New line style (1 if '\\r\\n', 0 otherwise): " << CR << std::endl;
-#endif
 	file.seekg(-1, std::ios::cur);
 
 	unsigned int xrefPos = getXrefPos();
-#ifdef PDFIN_DEBUG
-	std::cout << "Xref position: " << xrefPos << std::endl;
-#endif
 
 	getTrailer();
-#ifdef PDFIN_DEBUG // commented because of errors ;p
-	// std::cout << "Here is the file trailer:" << std::endl;
-	//for(std::map<std::string, std::string>::iterator itr = trailer.begin(); itr != trailer.end(); itr++)
-	//	std::cout << itr->first << ": " << itr->second << std::endl;
-#endif
 
 	getXrefData(xrefPos);
-#ifdef PDFIN_DEBUG
-	std::cout << "Xref table size: " << xrefData.size() << std::endl;
-#endif
-
 }
 
 void PdfIn::checkCR() {
@@ -180,7 +165,6 @@ void PdfIn::getXrefData (unsigned int xrefPos) {
 			break;
 		if(i == 4)
 			return;
-	//		return false;
 	}
 
 	if(trailer.count("/Size") > 0) //reserve memory space for all objects once
