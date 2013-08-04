@@ -1,9 +1,9 @@
-std::string PdfIn::extractObject
-(bool ignoreStreams, size_t startPos, bool trim) {
-     return Pdf::extractObject(file, ignoreStreams, startPos, trim);
+std::string bPdfIn::extractObject
+(size_t startPos, bool ignoreStreams, bool trim) {
+     return bPdf::extractObject(file, startPos, ignoreStreams, trim);
 }
 
-std::string Pdf::extractObject(std::istream &source, bool ignoreStreams, size_t startPos, bool trim) {
+std::string bPdf::extractObject(std::istream &source, size_t startPos, bool ignoreStreams, bool trim) {
     // CONTAINING OBJECTS: strings, arrays, dictionaries
     // each ends with specifing delimiting character
     const int CO_count = 6;
@@ -37,7 +37,7 @@ std::string Pdf::extractObject(std::istream &source, bool ignoreStreams, size_t 
 
 
     // place the pointer
-    if(startPos != -1)
+    if(startPos != std::string::npos)
 	source.seekg(startPos, std::ios::beg);
 
     // FIND OBJECTS and RETURN if occured on zero position in string:
@@ -50,7 +50,7 @@ std::string Pdf::extractObject(std::istream &source, bool ignoreStreams, size_t 
 
 	// EXAMINE COs
 	for(int i=0; i<CO_count; i++) {
-	   if( ( pos = Pdf::strfind(containingObjectsOpen[i], buffer.c_str()) ) != std::string::npos) {
+	   if( ( pos = buffer.find(containingObjectsOpen[i]) ) != std::string::npos) {
 
 		sthFound = true;
 
@@ -78,7 +78,7 @@ std::string Pdf::extractObject(std::istream &source, bool ignoreStreams, size_t 
 
 	// EXAMINE nCOs
 	for(int i=0; i<nCO_count; i++) {
-	   if( ( pos = Pdf::strfind(nonContainingObjects[i], buffer.c_str()) ) != std::string::npos) {
+	   if( ( pos = buffer.find(nonContainingObjects[i]) ) != std::string::npos) {
 
 		if(pos == 0) {
 		// 27.07.13 20:52
@@ -106,7 +106,7 @@ std::string Pdf::extractObject(std::istream &source, bool ignoreStreams, size_t 
 
 			    // see if it's not an indirect ref:
 			    int spcs = 0, digits = 0;
-			    for(int z=end; z<buffer.length(); z++) {
+			    for(int z=(int)end; z<(int)buffer.length(); z++) {
 				if(buffer[z] == ' ') {
 				    spcs++;
 				    continue;
@@ -138,13 +138,13 @@ std::string Pdf::extractObject(std::istream &source, bool ignoreStreams, size_t 
 	    break;
 
     } // while source.good() (looking for symbols)
-    if(!(source.good()))
+    if(!(source.good())) 
 	return std::string("");
 
     // IF nothing found on zero pos :
     // CHECK what came first and RETURN if nCO
     if(obj_num == -1) // if no CO found on zero pos
-      for(int i=1; i<buffer.length(); i++) {
+      for(int i=1; i<(int)buffer.length(); i++) {
 	for(int j=0; j<CO_count; j++)
 	   if(CO_positions[j] == i) {
 		obj_num = j;
@@ -181,7 +181,7 @@ std::string Pdf::extractObject(std::istream &source, bool ignoreStreams, size_t 
 
 			    // see if it's not an indirect ref:
 			    int spcs = 0, digits = 0;
-			    for(int z=end; z<buffer.length(); z++) {
+			    for(int z=end; z<(int)buffer.length(); z++) {
 				if(buffer[z] == ' ') {
 				    spcs++;
 				    continue;
@@ -214,7 +214,7 @@ std::string Pdf::extractObject(std::istream &source, bool ignoreStreams, size_t 
 
 	if(!trim) {
 	    // extract the "# # o"(..bj) to avoid re-finding it:
-    	    object = buffer.substr(CO_positions[obj_num], obj_self_pos);
+    	    object = buffer.substr(CO_positions[obj_num], obj_self_pos+1);
 	    buffer = buffer.substr(obj_self_pos+1);
 	}
 
@@ -234,14 +234,13 @@ std::string Pdf::extractObject(std::istream &source, bool ignoreStreams, size_t 
 
     }
     int level = 0; 			// indicate embedded objects
-
     while(source.good()) { 		// load line by line
 
 	size_t open, close, stream, pos = 0;
 	do {
-	    open = Pdf::strfind(containingObjectsOpen[obj_num], buffer.c_str(), pos);
-	    close = Pdf::strfind(containingObjectsClose[obj_num], buffer.c_str(), pos);
-	    stream = ignoreStreams ? Pdf::strfind("stream", buffer.c_str(), pos) : std::string::npos;
+	    open = buffer.find(containingObjectsOpen[obj_num], pos);
+	    close = buffer.find(containingObjectsClose[obj_num], pos);
+	    stream = ignoreStreams ? buffer.find("stream", pos) : std::string::npos;
 
 	    // IF opening char is before closing & "stream", INCREMENT embedding
 	    if( open != std::string::npos
@@ -256,7 +255,7 @@ std::string Pdf::extractObject(std::istream &source, bool ignoreStreams, size_t 
 
 
 		if(stream != std::string::npos && stream < close) {
-		    source.seekg(-(buffer.length()-stream+1), std::ios::beg); // place the pointer on start of stream
+		    source.seekg(-(buffer.length()-stream+1), std::ios::cur); // place the pointer on start of stream
 	            return (object + buffer.substr(0, stream).erase(stream)); 	// WITHOUT "s"(tream)
 		}
 
@@ -271,7 +270,7 @@ std::string Pdf::extractObject(std::istream &source, bool ignoreStreams, size_t 
 
 	    // ELSE IF closing char is present, DECREMENT embedding
 	    if( close != std::string::npos)
-		pos = close, level--;
+		pos = close+1, level--;
 	} while(open != std::string::npos || close != std::string::npos || stream != std::string::npos);
 
 	object += buffer + "\n";
@@ -279,4 +278,17 @@ std::string Pdf::extractObject(std::istream &source, bool ignoreStreams, size_t 
     } // while source.good() (loading from source)
     if(!(source.good()))
 	return std::string("");
+}
+
+std::string bPdfIn::extractStream(size_t length, size_t pos) {
+
+    if(pos != 0)
+        file.seekg(pos, std::ios::beg);
+
+    std::string stream;
+    stream.reserve(length);
+    for(size_t i = 0; i<length; i++)
+	stream += file.get();
+
+    return stream;
 }
