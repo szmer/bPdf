@@ -4,87 +4,52 @@ bPdfIn::~bPdfIn() {
 
 bPdfIn::bPdfIn(const char* filename) {
 
-    file.open(filename, std::fstream::in | std::fstream::ate);
-    // we've placed cursor in the end of file
+    file.open(filename, std::fstream::in | std::fstream::ate); // place cursor in the end of file
 
-    /* Find xref table position information */
-    int linesFromEnd = 0;
+    // Following little hack leads us directly to the end of "startxref" keyword.
+    char chr;
+    do {
+        file.seekg(-2, std::ios::cur);
+        if(chr == 'f')
+             break;
+    } while(file.get(chr));
 
-    for(int i=0; i<100; i++) {
-	file.seekg(-2, std::ios::cur);
-	if(file.get() == '\n')
-	     linesFromEnd++;
-	if(linesFromEnd == 2)
-	      break;
-    } // 100 times
-
-    if( linesFromEnd != 2 || file.fail() )
-	throw "bPdfIn was unable to find xref position, probably not a Pdf file.";
+    bPdf::getline(file);          // go to the next line - with xref position
 
     std::string xrefPosStr;
-    std::getline(file, xrefPosStr);
+    xrefPosStr = bPdf::getline(file);
     size_t xrefPos = std::atoi(xrefPosStr.c_str());
 
-   /* Get the file trailer dictionary. */
-   // Find the leading '<<' dictionary marker, then extract it.
-   for(int i=0;; i++) {
-	file.seekg(-2, std::ios::cur);
-	if(file.get() == '<') {
-	     if(file.get() == '<')
-		break;
-	     else
-		file.seekg(-1, std::ios::cur);
-	} // if character == '<'
+    if( xrefPos == 0 )
+	throw "bPdfIn was unable to find xref position, probably not a Pdf file.";
 
-	if( i == 1200 || file.fail() )
-	     throw "bPdfIn was unable to find file trailer, probably not a Pdf file.";
-   } // 1200 times
-  
-   file.seekg(-2, std::ios::cur); 
-   trailer = bPdf::unrollDict( extractObject(file.tellg()) );
+   // Load the cross-reference table.
+   loadXref(xrefPos);
 
-    /* Read xref table.
-     * Note that we assume that we have one xref table which is not packed in stream.
-     * It is most common situation, but handling other cases remains to be implemented
-     * later.
-     */
-    file.seekg(xrefPos);
+   // Load trailer and previous xref tables and trailers if file was updated. Tables are loaded
+   // in reversed chronological order so most recent entry for each object will come first for
+   // bPdf::getObjPos(). Old trailers are all discarded.
+   dictionary lastTrailer;
+   while(true) {
+       // loadXref() left cursor one line after the last entry of the table. We should go back
+       // to extract trailer (when there is no EOL after "trailer" keyword).
+       chr = ' ';
+       do {
+            if(chr == '\n' || chr == '\r')
+                 break;
+            file.seekg(-2, std::ios::cur);
+       } while(file.get(chr));
 
-    // ignore "xref" marker
-    while(file.get() != '\n');
+       lastTrailer = bPdf::unrollDict( extractObject() );
+       if(trailer.empty())
+            trailer = lastTrailer;
 
-    std::string line;
+       if(lastTrailer.count("/Prev") == 0)
+            break;
 
-    while(true) {
-	std::getline(file, line);
+       loadXref( atoi(lastTrailer["/Prev"].c_str()) );
+   }
 
-	if(line == "")
-	    break;
-
-	// Validate string: should contain exactly two numbers and one space in between.
-	size_t spcPos = line.find_first_of(' ');
-	if(
-	    ( spcPos
-		== line.find_last_of(' ')
-		!= std::string::npos )
-	    && (line.substr(0,spcPos).find_first_not_of("0123456789") == std::string::npos)
-	    && (line.substr(spcPos+1).find_first_not_of("0123456789") == std::string::npos)
-	  )
-	{
-	    bPdfXrefSection section;
-	    section.start = std::atoi(line.substr(0,spcPos).c_str());
-	    section.end = std::atoi(line.substr(spcPos+1).c_str());
-	    section.pos = file.tellg();
-	    xrefSections.push_back(section);
-
-	    file.ignore((section.end-section.start)*20); // ignore computed number of
-							 // 20-bytes entries (for now)
-        } // if line introduces subsection properly
-
-	else
-	     break;
-    } // while true
-
-    if(xrefSections.size() == 0)
+   if(xrefSections.size() == 0)
 	throw "bPdfIn was unable to find any cross-reference tables in file!";
 }

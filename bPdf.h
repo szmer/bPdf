@@ -24,9 +24,19 @@ struct bPdf {
     static std::string rollDict(dictionary&);
     static std::string rollArray(const std::vector<std::string>&);
 
-    static std::string extractObject(std::istream &source, size_t startPos = std::string::npos,
+    static std::string extractObject(std::istream&, size_t startPos = std::string::npos,
                                     bool ignoreStreams = false, bool trim = false);
-    static std::string itoa(int);
+
+    // Object-type functions. In general, they return position of the first character of the object
+    // or -1 when nothing was found. If "end" is provided, position of the last character can be also
+    // obtained (assigned to this variable). End remains untouched if function finds nothing.
+    static size_t isRef(const std::string&, size_t& end);
+    static size_t isRef(const std::string&); 
+
+    // auxiliary functions:
+    static std::string itoa(int);                   // int to std::string
+    static std::string getline(std::istream&);       // accepts all newline conventions(\n,\r\n,\r)
+                                                    // end of line characters are not discarded
 } ;
 
 struct bPdfNode {
@@ -53,8 +63,8 @@ class bPdfIn {
     // PDF objects methods
     size_t getObjPos(const int);
     size_t resolveIndirect(const std::string&);
-    size_t resolveIndirect(const std::string&, int&);
-    size_t resolveIndirect(const std::string&, int&, int&);
+    size_t resolveIndirect(const std::string&, size_t&);
+    size_t resolveIndirect(const std::string&, size_t&, size_t&);
 
     std::string extractObject(size_t startPos = std::string::npos, bool ignoreStreams = false, bool trim = false);
     std::string extractStream(size_t length, size_t pos = 0);
@@ -67,6 +77,7 @@ class bPdfIn {
   private:
     std::ifstream file;
 
+    void loadXref(size_t);
     std::vector<bPdfXrefSection> xrefSections;
 } ;
 
@@ -84,13 +95,16 @@ class bPdfPageCat {
   friend class bPdfIn;
 } ;
 
-#include "bPdf.cpp"
 #include "bPdf-auxil.cpp" // itoa (integer to string)
-#include "bPdf-extractObject_Stream.cpp"
+#include "bPdf.cpp"
+#include "bPdf-type.cpp"
+#include "bPdf-extractObject.cpp"
+#include "bPdf-extractStream.cpp"
 
 #include "bPdfIn.cpp"
 #include "bPdfIn-getObjPos.cpp"
 #include "bPdfIn-resolveIndirect.cpp"
+#include "bPdfIn-loadXref.cpp"
 #include "bPdfIn-loadPages.cpp"
 
 #include "bPdfNode.cpp"

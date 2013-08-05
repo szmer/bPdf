@@ -23,7 +23,7 @@ bPdfPageCat bPdfIn::loadPages() {
     // Load the whole structure into catalog.
     // Here is two vectors which will be used simultuneously to iterate.
     std::vector<bPdfNode> nodesStack;
-    std::vector<int> kidsCollectPos;	  // pos variables used to iterate with resolveIndirect
+    std::vector<size_t> kidsCollectPos;	  // pos variables used to iterate with resolveIndirect
 				 	  // and find kids' objects
     std::vector<int> dictNums;    // positive number is index in catalog's inheritedDicts vector,
 				     // -1 means such dictionary must be generated
@@ -33,7 +33,7 @@ bPdfPageCat bPdfIn::loadPages() {
     dictNums.push_back(-1);
 
     while(nodesStack.size() > 0) {
-        int pos = kidsCollectPos.back();
+        size_t pos = kidsCollectPos.back();
 	size_t nodePos = resolveIndirect(nodesStack.back().get("/Kids"), pos);
 	kidsCollectPos.back() = pos;
 

@@ -37,14 +37,16 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool igno
 
 
     // place the pointer
-    if(startPos != std::string::npos)
+    if(startPos != std::string::npos) {
+	source.clear();
 	source.seekg(startPos, std::ios::beg);
+    }
 
     // FIND OBJECTS and RETURN if occured on zero position in string:
 
     while(source.good()) {
 	lineStart = source.tellg();
-	std::getline(source, buffer);
+        buffer = bPdf::getline(source);
 	bool sthFound = false;
 	size_t pos;
 
@@ -105,24 +107,13 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool igno
 			      end++;
 
 			    // see if it's not an indirect ref:
-			    int spcs = 0, digits = 0;
-			    for(int z=(int)end; z<(int)buffer.length(); z++) {
-				if(buffer[z] == ' ') {
-				    spcs++;
-				    continue;
-				}
-				if(spcs == 1 && (int)buffer[z] > 47 && (int)buffer[z] < 58)
-				    digits++;
-				if(spcs == 2 && buffer[z] == 'R') {
-				    end = z+1;
-				    break;
-				}
-				if(spcs > 2)
-				    break;
-			    }
+			    size_t checker;
+			    if(bPdf::isRef(buffer, checker) == 0)
+				end = checker; 
 
 			    break;
 		    } // switch
+		    source.clear();
 		    source.seekg(lineStart+end, std::ios::beg); // move cursor to the end of obj
 		    return buffer.substr(pos, end-pos);
 		}
@@ -138,7 +129,7 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool igno
 	    break;
 
     } // while source.good() (looking for symbols)
-    if(!(source.good())) 
+    if(source.fail()) 
 	return std::string("");
 
     // IF nothing found on zero pos :
@@ -180,21 +171,9 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool igno
 			      end++;
 
 			    // see if it's not an indirect ref:
-			    int spcs = 0, digits = 0;
-			    for(int z=end; z<(int)buffer.length(); z++) {
-				if(buffer[z] == ' ') {
-				    spcs++;
-				    continue;
-				}
-				if(spcs == 1 && (int)buffer[z] > 47 && (int)buffer[z] < 58)
-				    digits++;
-				if(spcs == 2 && buffer[z] == 'R') {
-				    end = z+1;
-				    break;
-				}
-				if(spcs > 2)
-				    break;
-			    }
+			    size_t checker;
+			    if(bPdf::isRef(buffer.substr(i), checker) == 0)
+				end = checker;
 
 			    // see if it's not an internal ref:
 			    if(i > 4 && buffer.substr(i-4, 4) == "@@@@")
@@ -202,7 +181,7 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool igno
 
 			    break;
 		    }
-
+		    source.clear();
 		    source.seekg(lineStart+end, std::ios::beg); // move cursor to the end of obj
 		    return buffer.substr(i, end-i);
 	    }
@@ -255,10 +234,11 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool igno
 
 
 		if(stream != std::string::npos && stream < close) {
+		    source.clear();
 		    source.seekg(-(buffer.length()-stream+1), std::ios::cur); // place the pointer on start of stream
 	            return (object + buffer.substr(0, stream).erase(stream)); 	// WITHOUT "s"(tream)
 		}
-
+		source.clear();
 		source.seekg(-(buffer.length()-close), std::ios::cur); // place the pointer after the end of obj
 
 		if(trim)		
@@ -273,22 +253,9 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool igno
 		pos = close+1, level--;
 	} while(open != std::string::npos || close != std::string::npos || stream != std::string::npos);
 
-	object += buffer + "\n";
-	getline(source, buffer);
+	object += buffer;
+	buffer = bPdf::getline(source);
     } // while source.good() (loading from source)
     if(!(source.good()))
 	return std::string("");
-}
-
-std::string bPdfIn::extractStream(size_t length, size_t pos) {
-
-    if(pos != 0)
-        file.seekg(pos, std::ios::beg);
-
-    std::string stream;
-    stream.reserve(length);
-    for(size_t i = 0; i<length; i++)
-	stream += file.get();
-
-    return stream;
 }

@@ -2,20 +2,17 @@
 dictionary bPdf::unrollDict(const std::string& str) {
 
     dictionary dict;
-    std::stringstream strStream(str);
-
-    // get rid of opening "<<":
-    while(strStream.fail() || strStream.get() != '<');
-    if(strStream.fail())
-        throw "Trying to unroll dictionary from non-dictionary string.";
-    strStream.ignore();
+    std::stringstream strStream;
+    if(str.find("<<") == std::string::npos)
+         strStream.str(str.c_str());
+    else
+         strStream.str(str.substr(str.find("<<")+2).c_str());
 
     while(strStream.good()) {
 	std::string key = bPdf::extractObject(strStream);	
 	std::string value = bPdf::extractObject(strStream);
 	if(key != "" && value != "")
 	     dict.insert( std::pair<std::string, std::string>(key, value) );
-	std::cout << key << " => " << value << '\n';
     }
 
     return dict;

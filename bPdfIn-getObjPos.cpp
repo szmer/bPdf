@@ -8,10 +8,7 @@ size_t bPdfIn::getObjPos(int objNum) {
 	   file.seekg(xrefSections[i].pos);
 
 	   // Go to the desired entry.
-	   for(int ii=0;
-		ii < xrefSections[i].start+objNum;
-		ii++)
-	   { file.ignore(20); }
+	   file.ignore(xrefSections[i].entryLength * (objNum-xrefSections[i].start));
 
 	   // Get the position (first 10 bytes of the entry, with leading zeros).
 	   std::string entry;
