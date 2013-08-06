@@ -236,7 +236,7 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool igno
 
 		if(stream != std::string::npos && stream < close) {
 		    source.clear();
-		    source.seekg(-(buffer.length()-stream+1), std::ios::cur); // place the pointer on start of stream
+		    source.seekg(-(buffer.length()-stream+1), std::ios::cur); // place the pointer on start of "stream"
 	            return (object + buffer.substr(0, stream).erase(stream)); 	// WITHOUT "s"(tream)
 		}
 		source.clear();

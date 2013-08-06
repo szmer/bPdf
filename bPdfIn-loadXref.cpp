@@ -1,11 +1,67 @@
-void bPdfIn::loadXref(size_t byteOffset) {
+void bPdfIn::loadXref(size_t byteOffset&) {
     file.seekg(byteOffset);
-
-    // discard the line containing "xref" marker
-    bPdf::getline(file);
 
     std::string line;
 
+    // discard the line containing "xref" marker
+    line = bPdf::getline(file);
+
+    if(line.find("obj") != std::string::npos)
+	loadXrefCompressed(byteOffset);
+    else
+	loadXrefUncompressed();
+
+    return;
+}
+
+void bPdfIn::loadXrefCompressed(size_t &byteOffset) {
+
+    dictionary xrefDict = bPdf::unrollDict( extractObject(byteOffset)  );
+
+    // Get structure of entry (W)
+    if(xrefDict.count("/W") == 0) {
+        std::cout << "Warning: xref stream dict doesn't contain W entry, and is ignored." << std::endl;
+        return;
+    }
+    std::vector<std::string> arr_str = bPdf::unrollArray(xrefDict["/W"]);
+    std::vector<int> W;
+    for(int i=0, i<arr_str.size(); i++)
+        W[i] = std::atoi( arr_str[i].c_str() );
+
+    // Get structure of the table.
+    // Odd entries in array are first objects in subsections, even are numbers of objects in that
+    // subsection (that is, started by preceding odd entry).
+    std::vector<int> sectionsInStream;
+    if(xrefDict.count("/Index") == 0) {
+        // Default value: [0 SIZE].
+        if(xrefDict.count("/Size") == 0) {
+            std::cout << "Warning: xref dict doesn't cointain Stream and Info (optional) entry,"
+                      << "and is ignored." << std::endl;
+            return;
+        }
+        sectionsInStream.push_back(0);
+        sectionsInStream.push_back( std::atoi(xrefDict["/Size"].c_str()) );
+    }
+    else {
+        arr_str = bPdf::unrollArray(xrefDict["/Index"]);
+        for(int i=0; i<arr_str.size(); i++)
+             sectionsInStream[i]] = std::atoi( arr_str[i].c_str() );
+        if(sectionsInStream.size() % 2 != 0) {
+             std::cout << "Warning: xref dict has flawed Index entry, and is ignored." << std::endl;
+             return;
+        }
+    }
+
+    if(trailer.empty())
+         trailer = xrefDict;
+
+    return;
+}
+
+void bPdfIn::loadXrefUncompressed() {
+    std::string line;
+
+    // Normal, uncompressed xref table.
     while(true) {
 	line = bPdf::getline(file);
 
@@ -27,6 +83,7 @@ void bPdfIn::loadXref(size_t byteOffset) {
 	  )
 	{
 	    bPdfXrefSection section;
+            section.isCompressed = false;
 	    section.start = std::atoi(line.substr(0,spcPos).c_str());
 	    section.end = section.start + std::atoi(line.substr(spcPos+1).c_str()) - 1;
 	    section.pos = file.tellg();

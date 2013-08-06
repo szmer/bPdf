@@ -9,8 +9,7 @@
 #ifndef BPDF_H
 #define BPDF_H
 
-typedef std::map<std::string, std::string> dictionary;
-
+#include "bPdf-definitions.h"
 // some structs for strictly internal purposes:
 #include "bPdf-intern.h"
 
@@ -77,8 +76,13 @@ class bPdfIn {
   private:
     std::ifstream file;
 
-    void loadXref(size_t);
+    void loadXref(size_t&);
+    void loadXrefCompressed(size_t&);
+    void loadXrefUncompressed();
+
     std::vector<bPdfXrefSection> xrefSections;
+
+  friend class bPdfStream;
 } ;
 
 class bPdfPageCat {
@@ -95,11 +99,30 @@ class bPdfPageCat {
   friend class bPdfIn;
 } ;
 
+class bPdfStream : public bPdfNode  {
+   public:
+     std::string read();
+     std::string readRaw();
+
+     bPdfStream(size_t&, bPdfIn*);
+     size_t length() { return len; }
+
+   private:
+     size_t streamPosition;
+     size_t len;
+     int filter;
+
+ friend class bPdfIn;
+} ;
+
 #include "bPdf-auxil.cpp" // itoa (integer to string)
 #include "bPdf.cpp"
 #include "bPdf-type.cpp"
 #include "bPdf-extractObject.cpp"
 #include "bPdf-extractStream.cpp"
+
+#include "bPdfNode.cpp"
+#include "bPdfPageCat.cpp"
 
 #include "bPdfIn.cpp"
 #include "bPdfIn-getObjPos.cpp"
@@ -107,7 +130,7 @@ class bPdfPageCat {
 #include "bPdfIn-loadXref.cpp"
 #include "bPdfIn-loadPages.cpp"
 
-#include "bPdfNode.cpp"
-#include "bPdfPageCat.cpp"
+#include "bPdfStream.cpp"
+#include "bPdfStream-read.cpp"
 
    #endif // BPDF_H

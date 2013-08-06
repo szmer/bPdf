@@ -33,9 +33,7 @@ bPdfPageCat bPdfIn::loadPages() {
     dictNums.push_back(-1);
 
     while(nodesStack.size() > 0) {
-        size_t pos = kidsCollectPos.back();
-	size_t nodePos = resolveIndirect(nodesStack.back().get("/Kids"), pos);
-	kidsCollectPos.back() = pos;
+	size_t nodePos = resolveIndirect(nodesStack.back().get("/Kids"), kidsCollectPos.back());
 
 	if(nodePos != 0) {
 	     dictionary nodeDict = bPdf::unrollDict( extractObject(nodePos,true,true) );
