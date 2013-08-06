@@ -1,12 +1,12 @@
 struct bPdfXrefSection {
     int start;
     int end;
-    size_t pos;
+    int entryLength;
 
     bool isCompressed;
 
     // Uncompressed tables.
-    int entryLength;
+    size_t pos;
     
     // Compressed tables.
     std::string data;                   // decompressed

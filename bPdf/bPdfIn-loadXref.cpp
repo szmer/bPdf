@@ -1,4 +1,4 @@
-void bPdfIn::loadXref(size_t byteOffset&) {
+void bPdfIn::loadXref(size_t byteOffset) {
     file.seekg(byteOffset);
 
     std::string line;
@@ -14,46 +14,68 @@ void bPdfIn::loadXref(size_t byteOffset&) {
     return;
 }
 
-void bPdfIn::loadXrefCompressed(size_t &byteOffset) {
+void bPdfIn::loadXrefCompressed(size_t byteOffset) {
 
-    dictionary xrefDict = bPdf::unrollDict( extractObject(byteOffset)  );
+    bPdfStream xref(byteOffset, this);
 
     // Get structure of entry (W)
-    if(xrefDict.count("/W") == 0) {
+    if(xref.get("/W") == "") {
         std::cout << "Warning: xref stream dict doesn't contain W entry, and is ignored." << std::endl;
         return;
     }
-    std::vector<std::string> arr_str = bPdf::unrollArray(xrefDict["/W"]);
+    std::vector<std::string> arr_str = bPdf::unrollArray(xref.get("/W"));
     std::vector<int> W;
-    for(int i=0, i<arr_str.size(); i++)
-        W[i] = std::atoi( arr_str[i].c_str() );
+    int entryLength = 0;        // we'll use it while constructing section structs
+    for(int i=0; i<arr_str.size(); i++) {
+        W.push_back( std::atoi(arr_str[i].c_str()) );
+        entryLength += W[i];
+    }
 
     // Get structure of the table.
     // Odd entries in array are first objects in subsections, even are numbers of objects in that
     // subsection (that is, started by preceding odd entry).
-    std::vector<int> sectionsInStream;
-    if(xrefDict.count("/Index") == 0) {
+    std::vector<int> sectsInStrm;
+    if(xref.get("/Index") == "") {
         // Default value: [0 SIZE].
-        if(xrefDict.count("/Size") == 0) {
+        if(xref.get("/Size") == "") {
             std::cout << "Warning: xref dict doesn't cointain Stream and Info (optional) entry,"
                       << "and is ignored." << std::endl;
             return;
         }
-        sectionsInStream.push_back(0);
-        sectionsInStream.push_back( std::atoi(xrefDict["/Size"].c_str()) );
-    }
+        sectsInStrm.push_back(0);
+        sectsInStrm.push_back( std::atoi(xref.get("/Size").c_str()) );
+    } // if xref dict has Info entry
     else {
-        arr_str = bPdf::unrollArray(xrefDict["/Index"]);
+        arr_str = bPdf::unrollArray(xref.get("/Index"));
         for(int i=0; i<arr_str.size(); i++)
-             sectionsInStream[i]] = std::atoi( arr_str[i].c_str() );
-        if(sectionsInStream.size() % 2 != 0) {
+             sectsInStrm.push_back( std::atoi(arr_str[i].c_str()) );
+        if(sectsInStrm.size() % 2 != 0) {
              std::cout << "Warning: xref dict has flawed Index entry, and is ignored." << std::endl;
              return;
         }
+    } // else (xref dict has no Index entry)
+
+    // Finally, load xref info and save.
+    std::string xrefInfo = xref.read();
+
+    size_t loadedDataPtr = 0; 
+    for(int i=0; i<sectsInStrm.size(); i+=2) {
+       bPdfXrefSection section;
+
+       section.isCompressed = true;
+       section.start = sectsInStrm[i];
+       section.end = section.start+sectsInStrm[i+1]-1;
+
+       section.entryLength = entryLength;
+       section.entryStructure = W;
+       section.data = xrefInfo.substr(loadedDataPtr, sectsInStrm[i+1]*entryLength);
+       loadedDataPtr += sectsInStrm[i+1]*entryLength + 1;
+
+       xrefSections.push_back(section); 
     }
 
     if(trailer.empty())
-         trailer = xrefDict;
+         trailer = xref.dict;
 
     return;
 }

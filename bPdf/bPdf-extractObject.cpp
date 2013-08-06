@@ -93,10 +93,11 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool igno
 
 			case 2:				// names
 			    end = pos+1;
-			    while(		// see PDF spec, p. 17, but added opening signs
-						// because writers careleslly break the standards
+			    while(		// see PDF spec, p. 17, but added other signs
+						// because writers careleslly break the standard
 				(int)buffer[end] > 32 && (int)buffer[end] < 127 && buffer[end] != '('
 				&& buffer[end] != '/' && buffer[end] != '[' && buffer[end] != '<'
+				&& buffer[end] != ']' && buffer[end] != '>'
 			    ) 
 				end++;
 			    break;

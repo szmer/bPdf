@@ -4,7 +4,8 @@ bPdfIn::~bPdfIn() {
 
 bPdfIn::bPdfIn(const char* filename) {
 
-    file.open(filename, std::fstream::in | std::fstream::ate); // place cursor in the end of file
+    if(!file.open(filename, std::fstream::in | std::fstream::ate)) // place cursor in the end of file
+        throw "Cannot open PDF file."; 
 
     // Following little hack leads us directly to the end of "startxref" keyword.
     char chr;
@@ -47,7 +48,7 @@ bPdfIn::bPdfIn(const char* filename) {
        if(lastTrailer.count("/Prev") == 0)
             break;
 
-       loadXref( atoi(lastTrailer["/Prev"].c_str()) );
+       loadXref( (size_t)atoi(lastTrailer["/Prev"].c_str()) );
    }
 
    if(xrefSections.size() == 0)

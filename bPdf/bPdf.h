@@ -12,6 +12,7 @@
 #include "bPdf-definitions.h"
 // some structs for strictly internal purposes:
 #include "bPdf-intern.h"
+#include "bPdf-zlib.h"
 
 class bPdfIn;
 struct bPdfPageCat;
@@ -76,8 +77,8 @@ class bPdfIn {
   private:
     std::ifstream file;
 
-    void loadXref(size_t&);
-    void loadXrefCompressed(size_t&);
+    void loadXref(size_t);
+    void loadXrefCompressed(size_t);
     void loadXrefUncompressed();
 
     std::vector<bPdfXrefSection> xrefSections;
@@ -111,6 +112,7 @@ class bPdfStream : public bPdfNode  {
      size_t streamPosition;
      size_t len;
      int filter;
+     bPdfZlib zlib;
 
  friend class bPdfIn;
 } ;
