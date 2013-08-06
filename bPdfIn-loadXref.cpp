@@ -31,6 +31,9 @@ void bPdfIn::loadXref(size_t byteOffset) {
 	    section.end = section.start + std::atoi(line.substr(spcPos+1).c_str()) - 1;
 	    section.pos = file.tellg();
 
+            if(section.end-section.start < 0)
+		continue;
+
 	    // Check how many bytes are in entry. Apparently some PDFs violate sacrosanct 20-byte rule.
 	    line = bPdf::getline(file);
 	    if(line.length() == 20)          // '\n' extracted

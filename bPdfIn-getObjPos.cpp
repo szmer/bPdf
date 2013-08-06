@@ -12,7 +12,7 @@ size_t bPdfIn::getObjPos(int objNum) {
 
 	   // Get the position (first 10 bytes of the entry, with leading zeros).
 	   std::string entry;
-	   std::getline(file, entry);
+	   entry = bPdf::getline(file);
 	   entry.erase(10);
 	   const size_t byteOffsStart = entry.find_first_not_of('0');
 	   if(byteOffsStart == std::string::npos

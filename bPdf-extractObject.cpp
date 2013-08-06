@@ -109,7 +109,7 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool igno
 			    // see if it's not an indirect ref:
 			    size_t checker;
 			    if(bPdf::isRef(buffer, checker) == 0)
-				end = checker; 
+				end = checker+2;   // checker points to 'R', we want to preserve it 
 
 			    break;
 		    } // switch
@@ -129,8 +129,6 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool igno
 	    break;
 
     } // while source.good() (looking for symbols)
-    if(source.fail()) 
-	return std::string("");
 
     // IF nothing found on zero pos :
     // CHECK what came first and RETURN if nCO
@@ -173,7 +171,7 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool igno
 			    // see if it's not an indirect ref:
 			    size_t checker;
 			    if(bPdf::isRef(buffer.substr(i), checker) == 0)
-				end = checker;
+				end = checker+2;
 
 			    // see if it's not an internal ref:
 			    if(i > 4 && buffer.substr(i-4, 4) == "@@@@")
@@ -186,6 +184,9 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool igno
 		    return buffer.substr(i, end-i);
 	    }
        } // for possible positions - find the first object
+
+    if(obj_num == -1)
+	return "";
 
     // IF CO found, LOAD it and RETURN
 
@@ -213,7 +214,7 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool igno
 
     }
     int level = 0; 			// indicate embedded objects
-    while(source.good()) { 		// load line by line
+    do { 		// load line by line
 
 	size_t open, close, stream, pos = 0;
 	do {
@@ -255,7 +256,7 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool igno
 
 	object += buffer;
 	buffer = bPdf::getline(source);
-    } // while source.good() (loading from source)
+    } while(source.good());
     if(!(source.good()))
 	return std::string("");
 }

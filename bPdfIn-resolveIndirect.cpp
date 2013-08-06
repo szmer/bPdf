@@ -1,17 +1,18 @@
 size_t bPdfIn::resolveIndirect(const std::string& reference, size_t& pos, size_t& beg) {
 
-   size_t checker = bPdf::isRef( reference.substr(pos), pos );
+   size_t rltvPos;
+   size_t checker = bPdf::isRef( reference.substr(pos), rltvPos );
 
    if(checker == -1)
        return 0;
-   // else checker == position of the first char of reference in string
+   // else checker == position of the first char of reference in substring
 
-   beg = checker;
+   beg = checker+pos;
+   pos += rltvPos;
 
-   std::string objNumStr = reference.substr(checker);
-   int objNum = std::atoi( objNumStr.c_str() );       // 1st space and remainder
-                                                      // are ignored
-
+   int objNum = std::atoi( &((reference.c_str())[beg]) ); // 1st space and remainder
+                                                         // are ignored
+   (2 == 2);
    return getObjPos(objNum);
 }
 
