@@ -1,13 +1,28 @@
-std::string bPdfStream::readRaw() {
-    char* stream = new char[len];
-    source->file.read(stream, len);
-    std::string streamStr(stream, len); 
+std::string bPdfStream::readsomeRaw(int amount) {
+    source->file.seekg(streamPosition+streamPointer);
+
+    char* stream = new char[amount];
+    source->file.read(stream, amount);
+    std::string streamStr(stream, amount); 
     delete[] stream;
+
+    streamPointer += amount;
+    if(streamPointer == streamPosition+len)
+        streamPointer = 0;
+
     return streamStr;
 }
 
-std::string bPdfStream::read() {
-   std::string stream = readRaw();
+std::string bPdfStream::readRaw() {
+    size_t streamPointerCache = streamPointer;
+    streamPointer = 0;
+    std::string wholeStream = readsomeRaw(len);
+    streamPointer = streamPointerCache;
+    return wholeStream;
+}
+
+std::string bPdfStream::readsome(int amount) {
+   std::string content = readsomeRaw(amount);
 
    int filtCheck = filter;       // copy for reading subsequent filters
 
@@ -17,7 +32,7 @@ std::string bPdfStream::read() {
              break;
 
           case BPDF_FILTER_FLATE:
-             stream = bPdfZlib::quick_decomp(stream);
+             content = bPdfZlib::quick_decomp(content);
              break;
 
           default:
@@ -27,5 +42,13 @@ std::string bPdfStream::read() {
        filtCheck = filtCheck >> 8; 
    }
 
-   return stream;
+   return content;
+}
+
+std::string bPdfStream::read() {
+    size_t streamPointerCache = streamPointer;
+    streamPointer = 0;
+    std::string wholeStream = readsome(len);
+    streamPointer = streamPointerCache;
+    return wholeStream;
 }

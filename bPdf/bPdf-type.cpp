@@ -1,10 +1,13 @@
-size_t bPdf::isRef(const std::string &str, size_t &end) {
+size_t bPdf::isRef(const std::string &str, size_t &end, bool retry) {
 
    if(str.length() < 5)
 	return -1;
 
    for(size_t i=str.find_first_of("0123456789");
        i<(int)(str.length()-4) && i != std::string::npos; ) {
+
+      if(!retry && i != 0)
+          return -1;
 
       // Try to examine the first number of the reference.
       size_t firstSpc = str.find_first_of(" ", i);
@@ -41,7 +44,7 @@ size_t bPdf::isRef(const std::string &str, size_t &end) {
    return -1;
 }
 
-size_t bPdf::isRef(const std::string& str) {
-   size_t end;
+size_t bPdf::isRef(const std::string& str, bool retry) {
+   int end;
    return isRef(str, end);
 }

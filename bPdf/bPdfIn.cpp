@@ -4,7 +4,9 @@ bPdfIn::~bPdfIn() {
 
 bPdfIn::bPdfIn(const char* filename) {
 
-    if(!file.open(filename, std::fstream::in | std::fstream::ate)) // place cursor in the end of file
+    // place cursor in the end of file:
+    file.open(filename, std::fstream::in | std::fstream::ate);
+    if(!file)
         throw "Cannot open PDF file."; 
 
     // Following little hack leads us directly to the end of "startxref" keyword.

@@ -14,9 +14,8 @@ bPdfPageCat bPdfIn::loadPages() {
 	throw "PDF file contains no pages.";
 
     bPdfNode rootNode;
-    rootNode.positionInSource = resolveIndirect(catalog.root["/Pages"]);
-    rootNode.dict = bPdf::unrollDict
-		( extractObject(rootNode.positionInSource,true,true) );
+    rootNode.objNum = resolveIndirect(catalog.root["/Pages"]);
+    rootNode.dict = bPdf::unrollDict( getObjByNum(rootNode.objNum,true) );
     if(rootNode.dict.count("/Kids") == 0)
 	throw "Page tree root node has no kids.";
 
@@ -33,10 +32,10 @@ bPdfPageCat bPdfIn::loadPages() {
     dictNums.push_back(-1);
 
     while(nodesStack.size() > 0) {
-	size_t nodePos = resolveIndirect(nodesStack.back().get("/Kids"), kidsCollectPos.back());
+	size_t nodeObjNum = resolveIndirect(nodesStack.back().get("/Kids"), kidsCollectPos.back());
 
-	if(nodePos != 0) {
-	     dictionary nodeDict = bPdf::unrollDict( extractObject(nodePos,true,true) );
+	if(nodeObjNum > 0) {
+	     dictionary nodeDict = bPdf::unrollDict( getObjByNum(nodeObjNum,true) );
 
 	     if(nodeDict.count("/Type") == 0) {
 		continue;
@@ -46,7 +45,7 @@ bPdfPageCat bPdfIn::loadPages() {
 	     else if(nodeDict["/Type"] == "/Page") {
 		bPdfPage page;
 		page.source = this;
-		page.positionInSource = nodePos;
+		page.objNum = nodeObjNum;
 		page.dict = nodeDict;
 
 		if(dictNums.back() >= 0)
