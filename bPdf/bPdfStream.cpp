@@ -68,4 +68,6 @@ bPdfStream::bPdfStream(size_t & byteOffset, bPdfIn * src) {
     streamPosition = src->file.tellg();
     if(src->file.peek()=='\n')                      // /r/n?
         streamPosition++;
+
+    streamPointer = 0;
 }

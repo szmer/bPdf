@@ -7,19 +7,14 @@ struct bPdfZlib {
    int z_state;
 
    std::string decompress(const size_t&);
-   static std::string quick_decomp(std::string&);
 
    bPdfZlib(std::string*);
    bPdfZlib();
 } ;
 
-std::string bPdfZlib::quick_decomp(std::string & source) {
-    bPdfZlib zlib1Step(&source);
-    return zlib1Step.decompress(source.length());
-}
-
 // empty constructor, lets bPdfStream have instance of object without initialization
 bPdfZlib::bPdfZlib() {
+    data = NULL;
 }
 
 bPdfZlib::bPdfZlib(std::string *source) {
@@ -62,7 +57,7 @@ std::string bPdfZlib::decompress(const size_t& chunk) {
     std::string dcmprStr;
 
     if(z_state == Z_OK || z_state == Z_STREAM_END) {
-        data_pnt += chunk-strm.avail_out;
+        data_pnt = data->length()-data_pnt-strm.avail_in;
         dcmprStr = std::string(dcmpr, chunk-strm.avail_out);
     }
     else 

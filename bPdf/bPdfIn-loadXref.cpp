@@ -110,12 +110,12 @@ void bPdfIn::loadXrefUncompressed() {
 	    section.end = section.start + std::atoi(line.substr(spcPos+1).c_str()) - 1;
 	    section.pos = file.tellg();
 
-            if(section.end-section.start < 0)
-		continue;
+            if(section.end-section.start < 0)   // empty table, used in hybrid reference files
+		break;
 
 	    // Check how many bytes are in entry. Apparently some PDFs violate sacrosanct 20-byte rule.
 	    line = bPdf::getline(file);
-	    if(line.length() == 20)          // '\n' extracted
+	    if(line.length() == 20)
 		section.entryLength = 20;
 	    else {
 		if(line.length() == 19) {

@@ -47,6 +47,9 @@ bPdfIn::bPdfIn(const char* filename) {
        if(trailer.empty())
             trailer = lastTrailer;
 
+       if(lastTrailer.count("/XrefStm") != 0)          // hybrid-reference file
+            loadXref((size_t) atoi(lastTrailer["/XrefStm"].c_str()));
+
        if(lastTrailer.count("/Prev") == 0)
             break;
 

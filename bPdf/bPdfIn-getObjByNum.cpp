@@ -19,8 +19,8 @@ std::string bPdfIn::getObjByNum(int objNum, bool trim, bool ignoreStreams) {
 	if((xrefSections[i].start <= objNum) && (xrefSections[i].end >= objNum)
             && xrefSections[i].isCompressed) {
 
-               // Find object stream.
-               streamByteOffs = (size_t) xrefSections[i].comprLookup(objNum, numInStream);
+               // Find object stream - look up number given comprLookup in xref table.
+               streamByteOffs = getObjPos( xrefSections[i].comprLookup(objNum, numInStream) );
                bPdfStream objStream(streamByteOffs, this);
 
                const int firstObjByteOffs = std::atoi( objStream.get("/First").c_str() );
@@ -35,17 +35,15 @@ std::string bPdfIn::getObjByNum(int objNum, bool trim, bool ignoreStreams) {
                    // in the object stream.
                    bool number = false;
                    int counter = 0, ii = 0;
-                   for(; counter<numInStream*2; ii++) {
-                       if(objPositions[ii] >= '0' && objPositions[ii] <= '9' && !number)
-                           number = true, counter++;
-                       else if(number)
-                            number = false;
-                   } // for: go where desired byte offset is
+                   while(counter<numInStream*2+1) {
+                       ii = objPositions.find_first_of(' ', ii+1);
+                       counter++;
+                   } // while: go where desired byte offset is
                    objByteOffs = std::atoi( objPositions.substr(ii).c_str() );
                } // else: if object is not first in stream
 
                // Discard unmeaningful data if necessary.
-               objStream.readsome(objByteOffs-firstObjByteOffs);
+               objStream.readsome((size_t)objByteOffs);
 
                std::stringstream streamContent( objStream.readsome(objStream.length()-objByteOffs
                                                                                  -firstObjByteOffs) );

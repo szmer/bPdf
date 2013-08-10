@@ -1,9 +1,9 @@
 std::string bPdfIn::extractObject
-(size_t startPos, bool ignoreStreams, bool trim) {
-     return bPdf::extractObject(file, startPos, ignoreStreams, trim);
+(size_t startPos, bool trim, bool ignoreStreams) {
+     return bPdf::extractObject(file, startPos, trim, ignoreStreams);
 }
 
-std::string bPdf::extractObject(std::istream &source, size_t startPos, bool ignoreStreams, bool trim) {
+std::string bPdf::extractObject(std::istream &source, size_t startPos, bool trim, bool ignoreStreams) {
     // CONTAINING OBJECTS: strings, arrays, dictionaries
     // each ends with specifing delimiting character
     const int CO_count = 6;
@@ -210,7 +210,7 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool igno
             buffer = buffer.substr(CO_positions[obj_num]+1);
 	}
 
-	else    // skip whole opening marker
+	else    // skip whole opening marker      !!!!! (rewrite note, consider array: [0 1 2])
 	    buffer = buffer.substr( buffer.substr(CO_positions[obj_num]).find_first_of(" \t\n\v\f\r") );
 
     }

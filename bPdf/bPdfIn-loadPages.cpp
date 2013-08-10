@@ -6,8 +6,7 @@ bPdfPageCat bPdfIn::loadPages() {
     if(trailer.count("/Root") < 1)
 	throw "Root catalog cannot be found.";
 
-    catalog.root = bPdf::unrollDict
-		( extractObject(resolveIndirect(trailer["/Root"]),true,true) );
+    catalog.root = bPdf::unrollDict( getObjByNum(resolveIndirect(trailer["/Root"])) );
 
     // Load page tree root node.
     if(catalog.root.count("/Pages") < 1)
@@ -15,7 +14,7 @@ bPdfPageCat bPdfIn::loadPages() {
 
     bPdfNode rootNode;
     rootNode.objNum = resolveIndirect(catalog.root["/Pages"]);
-    rootNode.dict = bPdf::unrollDict( getObjByNum(rootNode.objNum,true) );
+    rootNode.dict = bPdf::unrollDict( getObjByNum(rootNode.objNum) );
     if(rootNode.dict.count("/Kids") == 0)
 	throw "Page tree root node has no kids.";
 
@@ -34,8 +33,8 @@ bPdfPageCat bPdfIn::loadPages() {
     while(nodesStack.size() > 0) {
 	size_t nodeObjNum = resolveIndirect(nodesStack.back().get("/Kids"), kidsCollectPos.back());
 
-	if(nodeObjNum > 0) {
-	     dictionary nodeDict = bPdf::unrollDict( getObjByNum(nodeObjNum,true) );
+	if(nodeObjNum != -1) {
+	     dictionary nodeDict = bPdf::unrollDict( getObjByNum(nodeObjNum) );
 
 	     if(nodeDict.count("/Type") == 0) {
 		continue;
