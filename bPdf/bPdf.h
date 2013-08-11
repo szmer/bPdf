@@ -97,8 +97,8 @@ class bPdfIn {
   private:
     std::ifstream file;
 
-    void loadXref(size_t);
-    void loadXrefCompressed(size_t);
+    dictionary loadXref(size_t);
+    dictionary loadXrefCompressed(size_t);
     void loadXrefUncompressed();
 
     std::vector<bPdfXrefSection> xrefSections;

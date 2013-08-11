@@ -1,27 +1,28 @@
-void bPdfIn::loadXref(size_t byteOffset) {
+dictionary bPdfIn::loadXref(size_t byteOffset) {
     file.seekg(byteOffset);
 
     std::string line;
+    dictionary dict;
 
-    // discard the line containing "xref" marker
     line = bPdf::getline(file);
 
     if(line.find("obj") != std::string::npos)
-	loadXrefCompressed(byteOffset);
+	dict = loadXrefCompressed(byteOffset);
     else
 	loadXrefUncompressed();
 
-    return;
+    return dict;
 }
 
-void bPdfIn::loadXrefCompressed(size_t byteOffset) {
+dictionary bPdfIn::loadXrefCompressed(size_t byteOffset) {
 
     bPdfStream xref(byteOffset, this);
+    dictionary emptyDict;
 
     // Get structure of entry (W)
     if(xref.get("/W") == "") {
         std::cout << "Warning: xref stream dict doesn't contain W entry, and is ignored." << std::endl;
-        return;
+        return emptyDict;
     }
     std::vector<std::string> arr_str = bPdf::unrollArray(xref.get("/W"));
     std::vector<int> W;
@@ -40,7 +41,7 @@ void bPdfIn::loadXrefCompressed(size_t byteOffset) {
         if(xref.get("/Size") == "") {
             std::cout << "Warning: xref dict doesn't cointain Stream and Info (optional) entry,"
                       << "and is ignored." << std::endl;
-            return;
+            return emptyDict;
         }
         sectsInStrm.push_back(0);
         sectsInStrm.push_back( std::atoi(xref.get("/Size").c_str()) );
@@ -51,7 +52,7 @@ void bPdfIn::loadXrefCompressed(size_t byteOffset) {
              sectsInStrm.push_back( std::atoi(arr_str[i].c_str()) );
         if(sectsInStrm.size() % 2 != 0) {
              std::cout << "Warning: xref dict has flawed Index entry, and is ignored." << std::endl;
-             return;
+             return emptyDict;
         }
     } // else (xref dict has no Index entry)
 
@@ -74,10 +75,7 @@ void bPdfIn::loadXrefCompressed(size_t byteOffset) {
        xrefSections.push_back(section); 
     }
 
-    if(trailer.empty())
-         trailer = xref.dict;
-
-    return;
+    return xref.dict;
 }
 
 void bPdfIn::loadXrefUncompressed() {

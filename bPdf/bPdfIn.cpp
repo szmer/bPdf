@@ -26,34 +26,37 @@ bPdfIn::bPdfIn(const char* filename) {
     if( xrefPos == 0 )
 	throw "bPdfIn was unable to find xref position, probably not a Pdf file.";
 
-   // Load the cross-reference table.
-   loadXref(xrefPos);
+   // Load the cross-reference table. Dictionary of xref stream will be received.
+   dictionary lastTrailer = loadXref(xrefPos);
 
    // Load trailer and previous xref tables and trailers if file was updated. Tables are loaded
    // in reversed chronological order so most recent entry for each object will come first for
    // bPdf::getObjPos(). Old trailers are all discarded.
-   dictionary lastTrailer;
    while(true) {
-       // loadXref() left cursor one line after the last entry of the table. We should go back
-       // to extract trailer (when there is no EOL after "trailer" keyword).
-       chr = ' ';
-       do {
-            if(chr == '\n' || chr == '\r')
-                 break;
-            file.seekg(-2, std::ios::cur);
-       } while(file.get(chr));
+       if(lastTrailer["/Type"] != "/XRef") {
+          // loadXref() left cursor one line after the last entry of the table. We should go back
+          // to extract trailer (when there is no EOL after "trailer" keyword).
+           chr = ' ';
+           do {
+               if(chr == '\n' || chr == '\r')
+                    break;
+               file.seekg(-2, std::ios::cur);
+           } while(file.get(chr));
 
-       lastTrailer = bPdf::unrollDict( extractObject() );
+           lastTrailer = bPdf::unrollDict( extractObject() );
+       } // if lastTrailer["/Type"] != "/XRef"
+
        if(trailer.empty())
             trailer = lastTrailer;
 
-       if(lastTrailer.count("/XrefStm") != 0)          // hybrid-reference file
-            loadXref((size_t) atoi(lastTrailer["/XrefStm"].c_str()));
+       if(lastTrailer.count("/XRefStm") != 0)          // hybrid-reference file
+            loadXref((size_t) atoi(lastTrailer["/XRefStm"].c_str()));
 
        if(lastTrailer.count("/Prev") == 0)
             break;
 
-       loadXref( (size_t)atoi(lastTrailer["/Prev"].c_str()) );
+       dictionary xrefDict = loadXref( (size_t)atoi(lastTrailer["/Prev"].c_str()) );
+       lastTrailer = xrefDict.empty() ? dictionary() : xrefDict;
    }
 
    if(xrefSections.size() == 0)
