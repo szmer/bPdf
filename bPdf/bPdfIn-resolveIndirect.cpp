@@ -2,7 +2,7 @@ int bPdfIn::resolveIndirect(const std::string& reference,
 size_t& pos, size_t& beg, bool retry) {
 
    size_t rltvPos;
-   size_t checker = bPdf::isRef( reference.substr(pos), rltvPos );
+   size_t checker = bPdf::isRef( reference.substr(pos), rltvPos, retry );
 
    if(checker == -1)
        return -1;

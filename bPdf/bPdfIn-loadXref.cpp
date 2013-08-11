@@ -95,9 +95,7 @@ void bPdfIn::loadXrefUncompressed() {
 	// Validate string: should contain exactly two numbers and one space in between.
 	size_t spcPos = line.find_first_of(' ');
 	if(
-	    ( spcPos
-		== line.find_last_of(' ')
-		!= std::string::npos )
+	    (spcPos != std::string::npos)
 	    && (line.substr(0,spcPos).find_first_not_of("0123456789") == std::string::npos)
 	    && (line.substr(spcPos+1).find_first_not_of("0123456789") == std::string::npos)
 	  )

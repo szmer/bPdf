@@ -1,3 +1,77 @@
+size_t bPdf::isArr(const std::string &str, size_t &end, bool retry) {
+   if(str.size() == 0)
+        return -1;
+
+   size_t pos = str.find_first_of('[');
+
+   if(pos == std::string::npos || (!retry && pos > 0))
+        return -1;
+
+   int lev = 0;     // level of embedding
+   size_t pnt = 0;
+   while(true) {
+        size_t open = str.find_first_of('[', pnt);
+        size_t close = str.find_first_of(']', pnt);
+        if(close == std::string::npos) {
+              end = -1;
+              return pos;
+        } // if close is nothing
+        if(open != std::string::npos && open < close) {
+              lev++;
+              pnt = open;
+              continue;
+        }
+        lev--;
+        if(lev >= 0) {
+              end = close;
+              return pos;
+        }
+   } // while true
+
+   return -1;
+}
+size_t bPdf::isArr(const std::string& str, bool retry) {
+   size_t end;
+   return isArr(str, end, retry);
+}
+
+size_t bPdf::isDict(const std::string &str, size_t &end, bool retry) {
+   if(str.size() == 0)
+        return -1;
+
+   size_t pos = str.find("<<");
+
+   if(pos == std::string::npos || (!retry && pos > 0))
+        return -1;
+
+   int lev = 0;     // level of embedding
+   size_t pnt = 0;
+   while(true) {
+        size_t open = str.find("<<", pnt);
+        size_t close = str.find(">>", pnt);
+        if(close == std::string::npos) {
+              end = -1;
+              return pos;
+        } // if close is nothing
+        if(open != std::string::npos && open < close) {
+              lev++;
+              pnt = open;
+              continue;
+        }
+        lev--;
+        if(lev >= 0) {
+              end = close;
+              return pos;
+        }
+   } // while true
+
+   return -1;
+}
+size_t bPdf::isDict(const std::string& str, bool retry) {
+   size_t end;
+   return isDict(str, end, retry);
+}
+
 size_t bPdf::isRef(const std::string &str, size_t &end, bool retry) {
 
    if(str.length() < 5)
@@ -45,6 +119,6 @@ size_t bPdf::isRef(const std::string &str, size_t &end, bool retry) {
 }
 
 size_t bPdf::isRef(const std::string& str, bool retry) {
-   int end;
-   return isRef(str, end);
+   size_t end;
+   return isRef(str, end, retry);
 }

@@ -13,6 +13,7 @@
 // some structs for strictly internal purposes:
 #include "bPdf-intern.h"
 #include "bPdf-zlib.h"
+#include "bPdf-predictors.h"
 
 class bPdfIn;
 struct bPdfPageCat;
@@ -28,7 +29,7 @@ struct bPdf {
     static std::string extractObject(std::istream&, size_t startPos = std::string::npos,
                                      bool trim = false, bool ignoreStreams = true);
 
-    // Object-type functions. In general, they return position of the first character of the object
+    // Type-checking functions. In general, they return position of the first character of the object
     // or -1 when nothing was found.
     // If *end* is provided, position of the last character can be also obtained (is assigned to
     // this variable). *End* remains untouched if function finds nothing.
@@ -38,6 +39,13 @@ struct bPdf {
 
     static size_t isRef(const std::string&, size_t& end, bool retry = true);
     static size_t isRef(const std::string&, bool retry = false);
+
+    // Type-checking funcs for containers assign -1 to *end* if they found container, but it seems to
+    // end outside given string.
+    static size_t isArr(const std::string&, size_t& end, bool retry = true);
+    static size_t isArr(const std::string&, bool retry = false);
+    static size_t isDict(const std::string&, size_t& end, bool retry = true);
+    static size_t isDict(const std::string&, bool retry = false);
 
     // Auxiliary functions.
     static std::string itoa(int);                   // int to std::string

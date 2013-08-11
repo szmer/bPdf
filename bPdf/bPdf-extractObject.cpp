@@ -20,13 +20,13 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool trim
 
     // NON-CONTAINING OBJECTS: booleans, names and numbers
     // each ends with space
-    const int nCO_count = 15;
+    const int nCO_count = 16;
     const char* nonContainingObjects[nCO_count] = {
 		"true\0", "false\0", "/\0", "+\0", "-\0",
-		"0\0", "1\0", "2\0", "3\0", "4\0", "5\0", "6\0", "7\0", "8\0", "9\0" };
+		"0\0", "1\0", "2\0", "3\0", "4\0", "5\0", "6\0", "7\0", "8\0", "9\0", "null\0" };
     int nCO_positions[nCO_count] = { -1, -1, -1, -1, -1,
 				    -1, -1, -1, -1, -1,
-				    -1, -1, -1, -1, -1,};
+				    -1, -1, -1, -1, -1, -1};
 
     // starting position in line will be saved to place the pointer in the stream in the end of the object
     size_t lineStart;
@@ -86,7 +86,7 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool trim
 		// 27.07.13 20:52
 		    size_t end; // end of the object
 		    switch(i) {
-			case 0: end = pos + 4; 		// bool. true
+                        case 15: case 0: end = pos + 4;	// bool. true
 			break;
 			case 1: end = pos + 5;		// bool. false
 			break;
@@ -149,7 +149,7 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool trim
 		    size_t end; // end of the object
 
 		    switch(j) {
-			case 0: end = i + 4; 		// bool. true
+			case 0: end = i + 4; 		// bool. true or null
 			break;
 			case 1: end = i + 5;		// bool. false
 			break;

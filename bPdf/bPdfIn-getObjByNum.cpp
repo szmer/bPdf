@@ -28,27 +28,27 @@ std::string bPdfIn::getObjByNum(int objNum, bool trim, bool ignoreStreams) {
 
                // Find the proper byte offset.
                int objByteOffs;
-               if(numInStream == 0)
-                   objByteOffs = firstObjByteOffs;
+               std::stringstream thisObj;
+               if(numInStream == 0) {
+                    thisObj.str( objStream.readsome(objStream.length()-firstObjByteOffs) );
+               }
                else {
                    // objectPositions contains alternately objects numbers and their byte offsets
                    // in the object stream.
-                   bool number = false;
                    int counter = 0, ii = 0;
                    while(counter<numInStream*2+1) {
                        ii = objPositions.find_first_of(' ', ii+1);
                        counter++;
                    } // while: go where desired byte offset is
                    objByteOffs = std::atoi( objPositions.substr(ii).c_str() );
-               } // else: if object is not first in stream
 
-               // Discard unmeaningful data if necessary.
-               objStream.readsome((size_t)objByteOffs);
+                   // Discard unmeaningful data.
+                   objStream.readsome((size_t)objByteOffs);
 
-               std::stringstream streamContent( objStream.readsome(objStream.length()-objByteOffs
-                                                                                 -firstObjByteOffs) );
+                   thisObj.str( objStream.readsome(objStream.length()-objByteOffs-firstObjByteOffs) );
+               } // if obj is not the first in the stream
 
-               return bPdf::extractObject(streamContent, std::string::npos, trim, ignoreStreams); 
+               return bPdf::extractObject(thisObj, std::string::npos, trim, ignoreStreams); 
         } // if objNum is in xrefSection scope
 
     } // for xrefSections
