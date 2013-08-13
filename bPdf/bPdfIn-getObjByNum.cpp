@@ -45,7 +45,7 @@ std::string bPdfIn::getObjByNum(int objNum, bool trim, bool ignoreStreams) {
                    // Discard unmeaningful data.
                    objStream.readsome((size_t)objByteOffs);
 
-                   thisObj.str( objStream.readsome(objStream.length()-objByteOffs-firstObjByteOffs) );
+                   thisObj.str( objStream.readsome() );
                } // if obj is not the first in the stream
 
                return bPdf::extractObject(thisObj, std::string::npos, trim, ignoreStreams); 

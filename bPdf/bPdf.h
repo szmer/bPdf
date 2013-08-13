@@ -130,9 +130,9 @@ class bPdfPageCat {
 
 class bPdfStream : public bPdfNode  {
    public:
-     std::string readsome(size_t);
+     std::string readsome(size_t amount = -1);
      std::string read();
-     std::string readsomeRaw(size_t);
+     std::string readsomeRaw(size_t amount = -1);
      std::string readRaw();
 
      bPdfStream(size_t&, bPdfIn*);

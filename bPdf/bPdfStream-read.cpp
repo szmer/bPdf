@@ -1,4 +1,7 @@
 std::string bPdfStream::readsomeRaw(size_t amount) {
+   if(amount == -1)
+       amount = len*len;
+
     if(amount > len-streamPointer)
         amount = len-streamPointer;
 
@@ -19,12 +22,15 @@ std::string bPdfStream::readsomeRaw(size_t amount) {
 std::string bPdfStream::readRaw() {
     size_t streamPointerCache = streamPointer;
     streamPointer = 0;
-    std::string wholeStream = readsomeRaw(len);
+    std::string wholeStream = readsomeRaw();
     streamPointer = streamPointerCache;
     return wholeStream;
 }
 
 std::string bPdfStream::readsome(size_t amount) {
+
+   if(amount == -1)
+       amount = len*len;
 
    // Output.
    std::string outputContent;
@@ -120,7 +126,7 @@ std::string bPdfStream::readsome(size_t amount) {
 std::string bPdfStream::read() {
     size_t streamPointerCache = streamPointer;
     streamPointer = 0;
-    std::string wholeStream = readsome(len*len);
+    std::string wholeStream = readsome();
     streamPointer = streamPointerCache;
     return wholeStream;
 }
