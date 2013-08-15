@@ -23,12 +23,9 @@ bPdfPageCat bPdfIn::loadPages() {
     std::vector<bPdfNode> nodesStack;
     std::vector<size_t> kidsCollectPos;	  // pos variables used to iterate with resolveIndirect
 				 	  // and find kids' objects
-    std::vector<int> dictNums;    // positive number is index in catalog's inheritedDicts vector,
-				     // -1 means such dictionary must be generated
 
     nodesStack.push_back(rootNode);
     kidsCollectPos.push_back(0);
-    dictNums.push_back(-1);
 
     while(nodesStack.size() > 0) {
 	size_t nodeObjNum = resolveIndirect(nodesStack.back().get("/Kids"), kidsCollectPos.back());
@@ -47,8 +44,9 @@ bPdfPageCat bPdfIn::loadPages() {
 		page.objNum = nodeObjNum;
 		page.dict = nodeDict;
 
-		if(dictNums.back() >= 0)
-		    page.inherDictNum = dictNums.back();
+		if(   !catalog.inheritedDicts.empty() &&
+                        (catalog.inheritedDicts.back())["reference"] == page.get("/Parent")   )
+		    page.inherDict = &catalog.inheritedDicts.back();
 
 		else {
 		// Make one "inherited dictionary" containinig all entries defined on higher
@@ -57,9 +55,9 @@ bPdfPageCat bPdfIn::loadPages() {
 		   for(int i=nodesStack.size()-1; i!=0; i--)
 		       { inherDict.insert(nodesStack[i].dict.begin(),
 					nodesStack[i].dict.end()); }
+                   inherDict["reference"] = page.get("/Parent");
 		   catalog.inheritedDicts.push_back(inherDict);
-		   page.inherDictNum = catalog.inheritedDicts.size()-1;
-		   dictNums.back() = page.inherDictNum;
+		   page.inherDict = &catalog.inheritedDicts.back();
 		} // else (make inherited dict and add to catalog)
 
 		catalog.pages.push_back(page);
@@ -71,12 +69,10 @@ bPdfPageCat bPdfIn::loadPages() {
 	     node.dict = nodeDict;
 	     nodesStack.push_back(node);
 	     kidsCollectPos.push_back(0);
-	     dictNums.push_back(-1);
 	} // if kid is found
 	else {
 	     nodesStack.pop_back();
 	     kidsCollectPos.pop_back();
-	     dictNums.pop_back();
 	} // no kids left, move up
     } // while (consume stack of page tree nodes)
 

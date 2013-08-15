@@ -66,7 +66,7 @@ struct bPdfNode {
 
 struct bPdfPage : public bPdfNode {
 // has dictionary and get-set-join functions
-    int inherDictNum;
+    dictionary* inherDict;
 } ;
 
 class bPdfIn {
