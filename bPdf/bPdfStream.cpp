@@ -1,4 +1,4 @@
-bPdfStream::bPdfStream(size_t & byteOffset, bPdfIn * src) {
+bPdfStream::bPdfStream(size_t byteOffset, bPdfIn * src) {
     source = src;
 
     dict = bPdf::unrollDict( src->extractObject(byteOffset, true, true) );

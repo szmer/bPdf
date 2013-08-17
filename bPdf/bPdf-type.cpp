@@ -72,6 +72,33 @@ size_t bPdf::isDict(const std::string& str, bool retry) {
    return isDict(str, end, retry);
 }
 
+bool bPdf::isOperator(const std::string &str, size_t pos, size_t &end) {
+    size_t fnd = str.find_first_not_of(" \n\r\t\f", pos);
+
+    if(fnd == std::string::npos ||
+        !( (str[fnd] <= 'Z' && str[fnd] >= 'A')
+       || (str[fnd] <= 'z' && str[fnd] >= 'a')
+       || str[fnd] == '\"' || str[fnd] == '\''
+      ) )
+        return false;
+
+    while(fnd++)
+       if( !( (str[fnd] <= 'Z' && str[fnd] >= 'A')
+           || (str[fnd] <= 'z' && str[fnd] >= 'a')
+           || str[fnd] == '0' || str[fnd] >= '1'
+           || str[fnd] == '*'
+       ) )
+          break;
+
+    end = fnd-1;
+
+    return true;
+}
+bool bPdf::isOperator(const std::string& str, size_t pos) {
+    size_t end;
+    bPdf::isOperator(str, pos, end);
+}
+
 size_t bPdf::isRef(const std::string &str, size_t &end, bool retry) {
 
    if(str.length() < 5)

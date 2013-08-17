@@ -12,4 +12,10 @@
 #define BPDF_FILTER_UNKNOWN     254
 #define BPDF_FILTER_NONE        255    // no filters, raw content
 
+// Amounts of data to be read by some functions (in bytes).
+#ifndef BPDF_ZLIB_CHUNK
+#define BPDF_ZLIB_CHUNK      262144    // 256 kb (bPdfStream::readsome)
+#endif
+
+typedef std::vector<std::string> array;
 typedef std::map<std::string, std::string> dictionary;

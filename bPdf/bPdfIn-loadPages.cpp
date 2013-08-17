@@ -1,24 +1,22 @@
-bPdfPageCat bPdfIn::loadPages() {
+void bPdfIn::loadPages() {
 
-    bPdfPageCat catalog;
-
-    // Load root catalog.
+    // Load root 
     if(trailer.count("/Root") < 1)
-	throw "Root catalog cannot be found.";
+	throw "Root cannot be found.";
 
-    catalog.root = bPdf::unrollDict( getObjByNum(resolveIndirect(trailer["/Root"])) );
+    root = bPdf::unrollDict( getObjByNum(resolveIndirect(trailer["/Root"])) );
 
     // Load page tree root node.
-    if(catalog.root.count("/Pages") < 1)
+    if(root.count("/Pages") < 1)
 	throw "PDF file contains no pages.";
 
     bPdfNode rootNode;
-    rootNode.objNum = resolveIndirect(catalog.root["/Pages"]);
+    rootNode.objNum = resolveIndirect(root["/Pages"]);
     rootNode.dict = bPdf::unrollDict( getObjByNum(rootNode.objNum) );
     if(rootNode.dict.count("/Kids") == 0)
 	throw "Page tree root node has no kids.";
 
-    // Load the whole structure into catalog.
+    // Load the whole structure into 
     // Here is two vectors which will be used simultuneously to iterate.
     std::vector<bPdfNode> nodesStack;
     std::vector<size_t> kidsCollectPos;	  // pos variables used to iterate with resolveIndirect
@@ -37,16 +35,16 @@ bPdfPageCat bPdfIn::loadPages() {
 		continue;
 	     } // if there is no type
 
-	     // Construct page object and add it to the catalog.
+	     // Construct page object and add it to the 
 	     else if(nodeDict["/Type"] == "/Page") {
 		bPdfPage page;
 		page.source = this;
 		page.objNum = nodeObjNum;
 		page.dict = nodeDict;
 
-		if(   !catalog.inheritedDicts.empty() &&
-                        (catalog.inheritedDicts.back())["reference"] == page.get("/Parent")   )
-		    page.inherDict = &catalog.inheritedDicts.back();
+		if(   !inheritedDicts.empty() &&
+                        (inheritedDicts.back())["reference"] == page.get("/Parent")   )
+		    page.inherDictNum = inheritedDicts.size()-1;
 
 		else {
 		// Make one "inherited dictionary" containinig all entries defined on higher
@@ -56,11 +54,11 @@ bPdfPageCat bPdfIn::loadPages() {
 		       { inherDict.insert(nodesStack[i].dict.begin(),
 					nodesStack[i].dict.end()); }
                    inherDict["reference"] = page.get("/Parent");
-		   catalog.inheritedDicts.push_back(inherDict);
-		   page.inherDict = &catalog.inheritedDicts.back();
-		} // else (make inherited dict and add to catalog)
+		   inheritedDicts.push_back(inherDict);
+		   page.inherDictNum = inheritedDicts.size()-1;
+		} // else (make inherited dict)
 
-		catalog.pages.push_back(page);
+		pages.push_back(page);
 		continue;
 	     } // if page
 
@@ -76,6 +74,5 @@ bPdfPageCat bPdfIn::loadPages() {
 	} // no kids left, move up
     } // while (consume stack of page tree nodes)
 
-    catalog.doc = this;
-    return catalog;
+    return;
 }

@@ -77,7 +77,7 @@ std::string bPdfStream::readsome(size_t amount) {
 
            case BPDF_FILTER_FLATE:
              while(zlib.z_state == Z_OK && zlib.data_pnt < zlib.data->length())
-                 outputContent += zlib.decompress(262144);  // 256 kb
+                 outputContent += zlib.decompress( BPDF_ZLIB_CHUNK );
              if(DecodeParms.size() != 0 && ! DecodeParms[f].empty()) {
                  if(DecodeParms[f].count("/Predictor") != 1)
                       break;

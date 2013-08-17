@@ -8,7 +8,7 @@
 
 #ifndef BPDF_H
 #define BPDF_H
-
+ 
 #include "bPdf-definitions.h"
 // some structs for strictly internal purposes:
 #include "bPdf-intern.h"
@@ -16,7 +16,7 @@
 #include "bPdf-predictors.h"
 
 class bPdfIn;
-struct bPdfPageCat;
+class bPdfPage;
 class bPdfStream;
 
 struct bPdf {
@@ -37,6 +37,8 @@ struct bPdf {
     // beginning of string (starting from 0 index). In contrary, when *retry* is set to true, function 
     // retries to find an object until its 1st instance is found or end of string is reached.
 
+    static bool isOperator(const std::string &str, size_t pos, size_t &end);
+    static bool isOperator(const std::string &str, size_t pos = 0);
     static size_t isRef(const std::string&, size_t& end, bool retry = true);
     static size_t isRef(const std::string&, bool retry = false);
 
@@ -56,23 +58,17 @@ struct bPdf {
 struct bPdfNode {
     bPdfIn* source;
 
-    std::string get(std::string);
-    void set(std::string, std::string);
-    void join(std::string, std::string);
+    std::string get(const char*);
+    void set(const char*, const char*);
+    void join(const char*, const char*);
 
     dictionary dict;
     int objNum;
 } ;
 
-struct bPdfPage : public bPdfNode {
-// has dictionary and get-set-join functions
-    dictionary* inherDict;
-} ;
-
 class bPdfIn {
   public:
-    // initialization methods
-    bPdfPageCat loadPages();
+    void loadPages();
 
                                      // PDF objects methods: *common methods*. //
     // _getObjByNum_: finds in document indirect object of given number (taken usually from resolveIndirect() call)
@@ -95,9 +91,13 @@ class bPdfIn {
                                     // PDF objects methods: *underlying methods*// 
     size_t getObjPos(int);
     std::string extractObject(size_t startPos = std::string::npos, bool trim = false, bool ignoreStreams = true);
-    std::string extractObjFromStream(bPdfStream, int num);
 
     dictionary trailer;
+
+    // page catalog
+    dictionary root;
+    bPdfPage getPage(int);
+    int count() { return pages.size(); }
 
     bPdfIn(const char*);
     ~bPdfIn();
@@ -111,21 +111,18 @@ class bPdfIn {
 
     std::vector<bPdfXrefSection> xrefSections;
 
-  friend class bPdfStream;
-} ;
-
-class bPdfPageCat {
-  public:   
-    bPdfPage getPage(int);
-    int count() { return pages.size(); }
-
-  private:
-    bPdfIn *doc;
+    // page catalog
     std::vector<bPdfPage> pages;
     std::vector<dictionary> inheritedDicts;
-    dictionary root;
 
-  friend class bPdfIn;
+  friend class bPdfStream;
+  friend class bPdfPage;
+} ;
+
+struct bPdfPage : public bPdfNode {
+// has dictionary and get-set-join functions
+    int inherDictNum;
+    dictionary inherDict() { return source->inheritedDicts[inherDictNum]; }
 } ;
 
 class bPdfStream : public bPdfNode  {
@@ -135,7 +132,10 @@ class bPdfStream : public bPdfNode  {
      std::string readsomeRaw(size_t amount = -1);
      std::string readRaw();
 
-     bPdfStream(size_t&, bPdfIn*);
+     size_t tellg() { return streamPointer; }
+     void rewind() { streamPointer = 0; }
+
+     bPdfStream(size_t, bPdfIn*);
      size_t length() { return len; }
      bPdfStream() { streamPointer=0; }
 
@@ -151,6 +151,19 @@ class bPdfStream : public bPdfNode  {
  friend class bPdfIn;
 } ;
 
+class bPdfContent {
+  public:
+     // fetches next operator with its operands:
+     array fetch();
+     bPdfContent(bPdfStream);
+
+  private:
+     int pnt;
+     bool e;
+     std::string data;
+     bPdfStream strm;
+} ;
+
 #include "bPdf-intern.cpp"
 #include "bPdf-auxil.cpp" // itoa (integer to string)
 #include "bPdf.cpp"
@@ -158,7 +171,7 @@ class bPdfStream : public bPdfNode  {
 #include "bPdf-extractObject.cpp"
 
 #include "bPdfNode.cpp"
-#include "bPdfPageCat.cpp"
+#include "bPdfIn-getPage.cpp"
 
 #include "bPdfIn.cpp"
 #include "bPdfIn-getObjByNum.cpp"
@@ -169,5 +182,6 @@ class bPdfStream : public bPdfNode  {
 
 #include "bPdfStream.cpp"
 #include "bPdfStream-read.cpp"
+#include "bPdfContent.cpp"
 
    #endif // BPDF_H

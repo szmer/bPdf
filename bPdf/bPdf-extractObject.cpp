@@ -104,7 +104,7 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool trim
 
 			default:			// numbers
 			    end = pos+1;
-			    while((int)buffer[end] > 47 && (int)buffer[end] < 58)		// digits
+			    while((buffer[end] > '0' && buffer[end] < '9') || buffer[end]=='.')
 			      end++;
 
 			    // see if it's not an indirect ref:
@@ -241,7 +241,7 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool trim
 	            return (object + buffer.substr(0, stream).erase(stream)); 	// WITHOUT "s"(tream)
 		}
 		source.clear();
-		source.seekg(-(buffer.length()-close), std::ios::cur); // place the pointer after the end of obj
+		source.seekg(-(buffer.length()-close-1), std::ios::cur); // place the pointer after the end of obj
 
 		if(trim)		
 		return object + buffer.substr(0, close).erase(close);
