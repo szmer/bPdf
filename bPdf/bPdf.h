@@ -68,6 +68,7 @@ struct bPdfNode {
 
 class bPdfIn {
   public:
+    void doc(const char*);
     void loadPages();
 
                                      // PDF objects methods: *common methods*. //
@@ -78,6 +79,10 @@ class bPdfIn {
     // it returns data exactly to this place, excluding the keyword. Otherwise it reads WHOLE object, to the "endobj" 
     // keyword. Most often it's silly and very inefficient, use bPdfStream class instead.
     std::string getObjByNum(int, bool trim = false, bool ignoreStreams = true); 
+
+    // _obj_: checks whether string contains an indirect object reference; if yes, returns referenced object, if no,
+    // returns unchanged argument.
+    std::string obj(const std::string&);
 
     // _resolveIndirect_: invokes type-checking method isRef() on given string. If successful, returns object
     // number, otherwise -1.
@@ -99,7 +104,7 @@ class bPdfIn {
     bPdfPage getPage(int);
     int count() { return pages.size(); }
 
-    bPdfIn(const char*);
+    bPdfIn() {}
     ~bPdfIn();
 
   private:
@@ -176,6 +181,7 @@ class bPdfContent {
 #include "bPdfIn.cpp"
 #include "bPdfIn-getObjByNum.cpp"
 #include "bPdfIn-getObjPos.cpp"
+#include "bPdfIn-obj.cpp"
 #include "bPdfIn-resolveIndirect.cpp"
 #include "bPdfIn-loadXref.cpp"
 #include "bPdfIn-loadPages.cpp"

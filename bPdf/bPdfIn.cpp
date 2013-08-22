@@ -2,7 +2,7 @@ bPdfIn::~bPdfIn() {
     file.close();
 }
 
-bPdfIn::bPdfIn(const char* filename) {
+void bPdfIn::doc(const char* filename) {
 
     // place cursor in the end of file:
     file.open(filename, std::fstream::in | std::fstream::ate);

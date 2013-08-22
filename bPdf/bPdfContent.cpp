@@ -46,7 +46,7 @@ array bPdfContent::fetch() {
     if(oper_end != 0) 
          pnt = oper_end+1;
     else if(!oper.empty())
-         throw "Cannot find content stream Pdf oper properly.";
+         throw "Cannot find content stream Pdf operator properly.";
 
     return oper;
 }
