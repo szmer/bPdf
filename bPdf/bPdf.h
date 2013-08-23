@@ -48,6 +48,8 @@ struct bPdf {
     static size_t isArr(const std::string&, bool retry = false);
     static size_t isDict(const std::string&, size_t& end, bool retry = true);
     static size_t isDict(const std::string&, bool retry = false);
+    static bool isIndObj(const std::string &str, size_t pos, size_t &end);
+    static bool isIndObj(const std::string &str, size_t pos = 0);
 
     // Auxiliary functions.
     static std::string itoa(int);                   // int to std::string

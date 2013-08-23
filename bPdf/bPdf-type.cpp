@@ -72,7 +72,36 @@ size_t bPdf::isDict(const std::string& str, bool retry) {
    return isDict(str, end, retry);
 }
 
+bool bPdf::isIndObj(const std::string &str, size_t pos, size_t &end) {
+
+    // The pattern is # # obj.
+
+    if(str.size() < 7)
+        return false;
+
+    size_t fnd = str.find("obj", pos);
+    if(fnd < 4 || ! (str[fnd+3] < '!'))     // there must be whitespace after "obj"
+        return false;
+
+    if(str[--fnd] == ' ') {
+        while(str[--fnd] >= '0' && str[fnd] <= '9' && fnd != 1);
+        if(   str[fnd] == ' '
+           && str.find_first_not_of("0123456789",pos) == fnd) {
+            if((fnd = str.find("endobj",fnd)) != std::string::npos)
+                 end = fnd;
+            return true;
+        }
+    }
+
+    return false;   
+}
+bool bPdf::isIndObj(const std::string &str, size_t pos) {
+    size_t end;
+    isIndObj(str, pos, end);
+}
+
 bool bPdf::isOperator(const std::string &str, size_t pos, size_t &end) {
+
     size_t fnd = str.find_first_not_of(" \n\r\t\f", pos);
 
     if(fnd == std::string::npos ||

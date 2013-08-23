@@ -57,13 +57,16 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool trim
 		sthFound = true;
 
 		// for "obj" INCLUDE numbers to the beginning of "# # obj" statement:
-		if(i == 4) {			// index for "obj" 
-		   obj_self_pos = pos;
-		   for(int spaces=0 ; (spaces!=3 && pos>0) ; pos--)
-			if(buffer[pos] == ' ')
-			    spaces++;
-		}
-
+		if(i == 4) {		// index for "obj" 
+                   for(int ii=0; ii<buffer.size(); ii++)
+                       if(isIndObj(buffer, ii)) {
+                           pos = ii;
+                           obj_self_pos = buffer.find_first_of("o",ii);
+                           goto ind_obj_fnd;
+                       }
+                   pos = -1;
+                   }
+                ind_obj_fnd:          // ugly goto, but it's temp. solution and func will be rewritten
 		CO_positions[i] = pos;
 
 		if(pos == 0) {
@@ -104,7 +107,7 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool trim
 
 			default:			// numbers
 			    end = pos+1;
-			    while((buffer[end] > '0' && buffer[end] < '9') || buffer[end]=='.')
+			    while((buffer[end] >= '0' && buffer[end] <= '9') || buffer[end]=='.')
 			      end++;
 
 			    // see if it's not an indirect ref:
@@ -166,7 +169,7 @@ std::string bPdf::extractObject(std::istream &source, size_t startPos, bool trim
 
 			default:			// numbers
 			    end = i+1;
-			    while((int)buffer[end] > 47 && (int)buffer[end] < 58)		// digits
+			    while((int)buffer[end] >= '0' && (int)buffer[end] <= '9')		// digits
 			      end++;
 
 			    // see if it's not an indirect ref:

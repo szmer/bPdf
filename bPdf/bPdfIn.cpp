@@ -10,7 +10,7 @@ void bPdfIn::doc(const char* filename) {
         throw "Cannot open PDF file."; 
 
     // Following little hack leads us directly to the end of "startxref" keyword.
-    char chr;
+    char chr = '\0';
     do {
         file.seekg(-2, std::ios::cur);
         if(chr == 'f')
