@@ -13,8 +13,7 @@ int main(int argc, char **argv) {
         filename = "doc.pdf";
 
     try {
-	bPdfIn input;
-	input.doc(filename.c_str());
+	bPdfIn input(filename.c_str());
 	input.loadPages();
 	std::cout << "Document contains " << input.trailer["/Size"] << " objects"
 		<< " and " << input.count() << " pages.\n";

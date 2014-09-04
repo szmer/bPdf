@@ -108,6 +108,7 @@ class bPdfIn {
     int count() { return pages.size(); }
 
     bPdfIn() {}
+	bPdfIn(const char * filename) { doc(filename); }
     ~bPdfIn();
 
   private:
@@ -136,7 +137,11 @@ struct bPdfPage : public bPdfNode {
 
 class bPdfStream : public bPdfNode  {
    public:
-     std::string readsome(size_t amount = -1);
+     // In the following functions readsome() returns given amount of bytes and read()
+	 // returns the whole stream's content. Their "raw" counterparts don't try to decompress
+     // extracted data (which might be useful e.g. if you want to decompress it with some other
+	 // solution).	 
+	 std::string readsome(size_t amount = -1);
      std::string read();
      std::string readsomeRaw(size_t amount = -1);
      std::string readRaw();
