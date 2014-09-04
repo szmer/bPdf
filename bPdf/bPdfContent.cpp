@@ -1,3 +1,5 @@
+#include "bPdf-structure.h"
+
 bPdfContent::bPdfContent(bPdfStream src) {
     strm = src;
     strm.rewind();       // read from the beginning

@@ -1,3 +1,5 @@
+#include "bPdf-structure.h"
+
 std::string bPdfIn::extractObject
 (size_t startPos, bool trim, bool ignoreStreams) {
      return bPdf::extractObject(file, startPos, trim, ignoreStreams);

@@ -1,3 +1,5 @@
+#include "bPdf-structure.h"
+
 dictionary bPdfIn::loadXref(size_t byteOffset) {
     file.seekg(byteOffset);
 

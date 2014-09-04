@@ -1,3 +1,5 @@
+#include "bPdf-structure.h"
+
 size_t bPdfXrefSection::comprLookup(int objNum, int& info) {
 
     if(!isCompressed) {

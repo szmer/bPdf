@@ -1,3 +1,5 @@
+#include "bPdf-structure.h"
+
 bPdfIn::~bPdfIn() {
     file.close();
 }

@@ -1,3 +1,5 @@
+#include "bPdf-structure.h"
+
 std::string bPdfIn::getObjByNum(int objNum, bool trim, bool ignoreStreams) {
 
     // If object is uncompressed, it is rather easy.

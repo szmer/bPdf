@@ -1,3 +1,5 @@
+#include "bPdf-structure.h"
+
 size_t bPdf::isArr(const std::string &str, size_t &end, bool retry) {
    if(str.size() == 0)
         return -1;
@@ -97,7 +99,7 @@ bool bPdf::isIndObj(const std::string &str, size_t pos, size_t &end) {
 }
 bool bPdf::isIndObj(const std::string &str, size_t pos) {
     size_t end;
-    isIndObj(str, pos, end);
+    return isIndObj(str, pos, end);
 }
 
 bool bPdf::isOperator(const std::string &str, size_t pos, size_t &end) {
@@ -125,7 +127,7 @@ bool bPdf::isOperator(const std::string &str, size_t pos, size_t &end) {
 }
 bool bPdf::isOperator(const std::string& str, size_t pos) {
     size_t end;
-    bPdf::isOperator(str, pos, end);
+    return bPdf::isOperator(str, pos, end);
 }
 
 size_t bPdf::isRef(const std::string &str, size_t &end, bool retry) {

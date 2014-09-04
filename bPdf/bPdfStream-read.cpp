@@ -1,3 +1,5 @@
+#include "bPdf-structure.h"
+
 std::string bPdfStream::readsomeRaw(size_t amount) {
    if(amount == -1)
        amount = len*len;

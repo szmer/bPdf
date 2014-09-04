@@ -1,3 +1,5 @@
+#include "bPdf-structure.h"
+
 size_t bPdfIn::getObjPos(int objNum) {
 
     for(int i=0; i<(int)xrefSections.size(); i++) {

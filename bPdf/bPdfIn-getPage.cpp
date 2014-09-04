@@ -1,3 +1,5 @@
+#include "bPdf-structure.h"
+
 bPdfPage bPdfIn::getPage(int number) {
    if(number >= (int)pages.size())
       throw "Trying to get page from out of bounds.";

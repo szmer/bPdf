@@ -1,3 +1,5 @@
+#include "bPdf-structure.h"
+
 void bPdfIn::loadPages() {
 
     // Load root 

@@ -1,3 +1,5 @@
+#include "bPdf-structure.h"
+
 // unrollDict
 dictionary bPdf::unrollDict(const std::string& str) {
 

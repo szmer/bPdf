@@ -13,10 +13,11 @@ int main(int argc, char **argv) {
         filename = "doc.pdf";
 
     try {
-	bPdfIn input(filename.c_str());
-	bPdfPageCat pageCat = input.loadPages();
+	bPdfIn input;
+	input.doc(filename.c_str());
+	input.loadPages();
 	std::cout << "Document contains " << input.trailer["/Size"] << " objects"
-		<< " and " << pageCat.count() << " pages.\n";
+		<< " and " << input.count() << " pages.\n";
     }
     catch(const char* msg) {
 	std::cout << "Fatal error: " << msg << '\n';

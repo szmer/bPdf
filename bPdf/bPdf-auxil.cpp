@@ -1,3 +1,5 @@
+#include "bPdf-structure.h"
+
 std::string bPdf::itoa(int number) {
     std::string str;
 

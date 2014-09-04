@@ -1,3 +1,5 @@
+#include "bPdf-structure.h"
+
 bPdfStream::bPdfStream(size_t byteOffset, bPdfIn * src) {
     source = src;
 

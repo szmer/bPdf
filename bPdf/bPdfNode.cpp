@@ -1,3 +1,5 @@
+#include "bPdf-structure.h"
+
 std::string bPdfNode::get(const char* key) {
    if(dict.count(key) > 0)
 	return dict[key];

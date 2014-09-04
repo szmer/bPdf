@@ -1,3 +1,5 @@
+#include "bPdf-structure.h"
+
 int bPdfIn::resolveIndirect(const std::string& reference,
 size_t& pos, size_t& beg, bool retry) {
 
